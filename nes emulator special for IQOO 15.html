@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NES Emulator Ultimate</title>
+    <!-- Local jsnes core pinned to 2.0.0 for stable SMB3 sprite rendering. -->
+    <script src="jsnes_source.js"></script>
+    <!-- FIX #11: Removed unused Tailwind CSS (was adding ~100KB for nothing) -->
+    <style>
+        :root {
+            --body-bg: #e0e0e0;
+            --console-color: #d1ccb8;
+            --dpad-color: #333;
+            --btn-red: #cc1a1a;
+            --btn-red-shadow: #8a1010;
+        }
+
+        body {
+            background-color: var(--body-bg);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            touch-action: none; /* Wajib: Mencegah pull-to-refresh & scroll */
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Badan Konsol Ala Gameboy */
+        #console-body {
+            background-color: var(--console-color);
+            width: 100%;
+            height: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.1), 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        /* Area Layar */
+        #screen-wrapper {
+            background-color: #4a4a4a;
+            padding: 20px 20px 30px 20px;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+            box-shadow: inset 0 -5px 15px rgba(0,0,0,0.4);
+            position: relative;
+            z-index: 10;
+        }
+
+        .screen-glass {
+            background-color: #000;
+            padding: 5px;
+            border-radius: 10px;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.1);
+        }
+
+        canvas {
+            width: 100%;
+            aspect-ratio: 256 / 240;
+            background-color: #111;
+            image-rendering: pixelated; /* Menjaga ketajaman piksel 8-bit */
+            display: block;
+            border-radius: 5px;
+        }
+
+        #osd-text {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            text-shadow: 1px 1px 0 #000;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Menu Bar */
+        .toolbar {
+            display: flex;
+            justify-content: space-evenly;
+            background: rgba(255, 255, 255, 0.4);
+            margin: 15px 15px 0 15px;
+            padding: 10px;
+            border-radius: 10px;
+            z-index: 5;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .btn-tool {
+            background: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 3px 0 #bbb;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .btn-tool:active {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 #bbb;
+        }
+
+        /* Area Kontrol Bawah */
+        #controls-container {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        /* D-Pad Layout */
+        .dpad-container {
+            position: absolute;
+            bottom: 60px;
+            left: 20px;
+            width: 140px;
+            height: 140px;
+        }
+        
+        .dpad-grid {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+        }
+
+        .d-btn { background-color: var(--dpad-color); }
+        .d-btn.pressed { background-color: #555; }
+        
+        .d-up { grid-area: 1 / 2 / 2 / 3; border-radius: 8px 8px 0 0; }
+        .d-down { grid-area: 3 / 2 / 4 / 3; border-radius: 0 0 8px 8px; }
+        .d-left { grid-area: 2 / 1 / 3 / 2; border-radius: 8px 0 0 8px; }
+        .d-right { grid-area: 2 / 3 / 3 / 4; border-radius: 0 8px 8px 0; }
+        .d-center { grid-area: 2 / 2 / 3 / 3; background-color: var(--dpad-color); }
+
+        /* Tombol Aksi (A & B) */
+        .action-container {
+            position: absolute;
+            bottom: 75px;
+            right: 15px;
+            width: 140px;
+            height: 100px;
+            transform: rotate(-20deg);
+        }
+
+        .btn-action {
+            width: 60px;
+            height: 60px;
+            background-color: var(--btn-red);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 5px 0 var(--btn-red-shadow), inset -2px -2px 5px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+
+        .btn-action.pressed {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 var(--btn-red-shadow), inset -2px -2px 5px rgba(0,0,0,0.5);
+        }
+
+        .btn-b { left: 0; bottom: 0; }
+        .btn-a { right: 0; top: 0; }
+
+        .btn-label {
+            position: absolute;
+            bottom: -22px;
+            color: #777;
+            font-weight: 800;
+            font-size: 14px;
+            transform: rotate(20deg);
+        }
+
+        /* Start & Select */
+        .sys-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 25px;
+        }
+
+        .sys-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-sys {
+            width: 50px;
+            height: 14px;
+            background-color: var(--dpad-color);
+            border-radius: 10px;
+            box-shadow: 0 3px 0 #111;
+            transform: rotate(-20deg);
+        }
+
+        .btn-sys.pressed {
+            transform: rotate(-20deg) translateY(3px);
+            box-shadow: 0 0 0 #111;
+        }
+
+        .sys-label { font-size: 11px; color: #777; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div id="console-body">
+        
+        <!-- Layar Game -->
+        <div id="screen-wrapper">
+            <div class="screen-glass">
+                <div id="osd-text">Siap. Buka ROM.</div>
+                <canvas id="nes-canvas" width="256" height="240"></canvas>
+            </div>
+            <!-- Dekorasi Garis -->
+            <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:12px;">
+                <div style="width: 30px; height: 3px; background-color: #b52b2b; border-radius: 2px;"></div>
+                <div style="width: 30px; height: 3px; background-color: #272f61; border-radius: 2px;"></div>
+            </div>
+        </div>
+
+        <!-- Menu Fungsional -->
+        <div class="toolbar">
+            <button class="btn-tool" id="btn-upload">📂 Muat ROM</button>
+            <input type="file" id="file-input" accept=".nes" style="display: none;">
+            
+            <button class="btn-tool" id="btn-pause">⏸️ Jeda</button>
+            <button class="btn-tool" id="btn-save">💾 Save</button>
+            <button class="btn-tool" id="btn-load">📂 Load</button>
+            <button class="btn-tool" id="btn-fullscreen">⛶ Full</button>
+            <!-- Speed selector: caps NES frame rate for high-Hz displays -->
+            <select class="btn-tool" id="sel-speed" title="Kecepatan Emulasi">
+                <option value="0.50">🐢 50%</option>
+                <option value="0.75">🐌 75%</option>
+                <option value="1.00" selected>✅ 100%</option>
+                <option value="1.25">⚡ 125%</option>
+                <option value="1.50">🚀 150%</option>
+            </select>
+        </div>
+
+        <!-- Kontrol Fisik Virtual -->
+        <div id="controls-container">
+            
+            <!-- D-Pad -->
+            <div class="dpad-container">
+                <div class="dpad-grid">
+                    <div class="d-btn d-up" data-key="up"></div>
+                    <div class="d-btn d-left" data-key="left"></div>
+                    <div class="d-center"></div>
+                    <div class="d-btn d-right" data-key="right"></div>
+                    <div class="d-btn d-down" data-key="down"></div>
+                </div>
+            </div>
+
+            <!-- Tombol A/B -->
+            <div class="action-container">
+                <div class="btn-action btn-b" data-key="b">B<span class="btn-label">B</span></div>
+                <div class="btn-action btn-a" data-key="a">A<span class="btn-label">A</span></div>
+            </div>
+
+            <!-- Start/Select -->
+            <div class="sys-container">
+                <div class="sys-group">
+                    <div class="btn-sys" data-key="select"></div>
+                    <span class="sys-label">SELECT</span>
+                </div>
+                <div class="sys-group">
+                    <div class="btn-sys" data-key="start"></div>
+                    <span class="sys-label">START</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. ARSITEKTUR RENDER GRAFIS (Super Stabil)
+        // ==========================================
+        const SCREEN_WIDTH = 256;
+        const SCREEN_HEIGHT = 240;
+        
+        const canvas = document.getElementById('nes-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Optimasi performa
+        ctx.imageSmoothingEnabled = false;
+
+        const imageData = ctx.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
+        // Menggunakan buffer memori 32-bit untuk menyalin frame grafis dengan kecepatan tinggi
+        const buf = new ArrayBuffer(imageData.data.length);
+        const buf8 = new Uint8ClampedArray(buf);
+        const buf32 = new Uint32Array(buf);
+
+        let isRunning = false;
+        let isPaused = false;
+        let reqAnimId = null;
+        let currentROMName = ''; // FIX #8: Track loaded ROM for per-game saves
+
+        // ==========================================
+        // 2. ARSITEKTUR AUDIO (Ring Buffer, Fixed Rate)
+        // ==========================================
+        let audioCtx;
+        let scriptNode;
+
+        // FIX #4: Ring buffer instead of Array.shift() — O(1) reads, no GC pressure
+        const AUDIO_RING_SIZE = 16384;
+        let audioRing = new Float32Array(AUDIO_RING_SIZE);
+        let audioWritePos = 0;
+        let audioReadPos = 0;
+
+        function audioRingAvailable() {
+            let avail = audioWritePos - audioReadPos;
+            if (avail < 0) avail += AUDIO_RING_SIZE;
+            return avail;
+        }
+
+        // FIX #2: Use consistent sampleRate (44100) for both AudioContext and jsnes
+        const SAMPLE_RATE = 44100;
+
+        function setupAudio() {
+            if (audioCtx) return;
+            const AC = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AC({ sampleRate: SAMPLE_RATE });
+            
+            // FIX #3: Reduced buffer from 4096 to 2048 for lower latency (~46ms vs ~93ms)
+            scriptNode = audioCtx.createScriptProcessor(2048, 0, 1);
+            scriptNode.onaudioprocess = function(e) {
+                const output = e.outputBuffer.getChannelData(0);
+                const avail = audioRingAvailable();
+                for (let i = 0; i < output.length; i++) {
+                    if (i < avail) {
+                        output[i] = audioRing[audioReadPos];
+                        audioReadPos = (audioReadPos + 1) % AUDIO_RING_SIZE;
+                    } else {
+                        output[i] = 0;
+                    }
+                }
+            };
+            scriptNode.connect(audioCtx.destination);
+        }
+
+        // ==========================================
+        // 3. INISIALISASI CORE EMULATOR (JSNES)
+        // ==========================================
+        const nes = new jsnes.NES({
+            sampleRate: SAMPLE_RATE, // FIX #2: Match AudioContext rate
+            onFrame: function(frameBuffer) {
+                // jsnes outputs RGB (0xRRGGBB). ImageData's Uint32 view needs
+                // little-endian RGBA bytes, so pack as 0xAABBGGRR.
+                for (let i = 0; i < frameBuffer.length; i++) {
+                    const color = frameBuffer[i];
+                    buf32[i] = 0xFF000000
+                        | ((color & 0x0000FF) << 16)
+                        | (color & 0x00FF00)
+                        | ((color & 0xFF0000) >>> 16);
+                }
+                imageData.data.set(buf8);
+                ctx.putImageData(imageData, 0, 0);
+            },
+            onAudioSample: function(left, right) {
+                // FIX #4: Write to ring buffer instead of push/shift
+                const nextPos = (audioWritePos + 1) % AUDIO_RING_SIZE;
+                if (nextPos !== audioReadPos) { // Don't overwrite unread data
+                    audioRing[audioWritePos] = (left + right) * 0.5; // Mono mix
+                    audioWritePos = nextPos;
+                }
+            }
+        });
+
+        // NES native framerate
+        const NES_FPS = 60.098;
+        const NES_FRAME_MS = 1000 / NES_FPS; // ~16.64ms per frame at 1x speed
+        let speedMultiplier = 1.0;            // Controlled by #sel-speed
+        let frameAccumulator = 0;             // ms of "owed" frames
+        let lastTimestamp = null;
+
+        // Timestamp-based frame pacer: only calls nes.frame() when real elapsed
+        // time covers a full NES frame — works correctly on ANY display refresh rate.
+        function engineLoop(timestamp) {
+            if (!isRunning) {
+                reqAnimId = null;
+                return;
+            }
+
+            reqAnimId = requestAnimationFrame(engineLoop);
+
+            if (lastTimestamp === null) {
+                lastTimestamp = timestamp;
+                return;
+            }
+
+            // Clamp delta to 100ms max (e.g. tab was backgrounded)
+            const delta = Math.min(timestamp - lastTimestamp, 100);
+            lastTimestamp = timestamp;
+
+            if (isPaused) return;
+
+            const targetFrameMs = NES_FRAME_MS / speedMultiplier;
+            frameAccumulator += delta;
+
+            // Run as many NES frames as real time allows (usually exactly 1)
+            while (frameAccumulator >= targetFrameMs) {
+                frameAccumulator -= targetFrameMs;
+                try {
+                    nes.frame();
+                } catch (e) {
+                    console.error('Emulation error:', e);
+                    showStatus("Error Emulasi! Cek konsol.");
+                    isRunning = false;
+                    return;
+                }
+            }
+        }
+
+        document.getElementById('sel-speed').addEventListener('change', function() {
+            speedMultiplier = parseFloat(this.value);
+            frameAccumulator = 0; // Reset accumulator to avoid burst on speed change
+            showStatus('Kecepatan: ' + Math.round(speedMultiplier * 100) + '%');
+        });
+
+        // ==========================================
+        // 4. PEMBACA ROM ANTI-GAGAL
+        // ==========================================
+        document.getElementById('btn-upload').addEventListener('click', () => {
+            document.getElementById('file-input').click();
+        });
+
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // FIX #8: Store ROM name for per-game save slots
+            currentROMName = file.name.replace(/\.nes$/i, '');
+
+            // FIX #12: Reset input immediately so re-loading same file works
+            const fileInput = e.target;
+
+            const reader = new FileReader();
+            
+            // Kita baca sebagai ArrayBuffer murni untuk mencegah file rusak oleh browser
+            reader.readAsArrayBuffer(file);
+            
+            reader.onload = function(evt) {
+                const arrayBuffer = evt.target.result;
+                const uint8Array = new Uint8Array(arrayBuffer);
+                
+                // Teknik "Chunking": Mencegah 'Maximum call stack size exceeded' saat memuat file besar.
+                const chunks = [];
+                const chunkSize = 0x8000; // Baca per 32KB
+                for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                    chunks.push(String.fromCharCode.apply(null, uint8Array.subarray(i, i + chunkSize)));
+                }
+                const romDataString = chunks.join('');
+
+                try {
+                    // Memasukkan binary string yang sudah sempurna ke emulator
+                    nes.loadROM(romDataString);
+                    showStatus("Game Siap Dimainkan!");
+                    
+                    // Inisialisasi Audio (Sistem HP mengharuskan user interaksi dulu)
+                    setupAudio();
+                    if(audioCtx.state === 'suspended') audioCtx.resume();
+
+                    // Reset audio ring buffer
+                    audioWritePos = 0;
+                    audioReadPos = 0;
+
+                    isRunning = true;
+                    isPaused = false;
+                    document.getElementById('btn-pause').textContent = "⏸️ Jeda";
+
+                    // Reset frame pacer so timing starts fresh
+                    lastTimestamp = null;
+                    frameAccumulator = 0;
+                    
+                    if (reqAnimId) cancelAnimationFrame(reqAnimId);
+                    reqAnimId = requestAnimationFrame(engineLoop);
+
+                } catch (error) {
+                    console.error(error);
+                    showStatus("Error: ROM tidak kompatibel / rusak.");
+                }
+
+                fileInput.value = '';
+            };
+        });
+
+        // ==========================================
+        // 5. SISTEM KONTROL SENTUH MULTITOUCH
+        // ==========================================
+        const keyMapping = {
+            'up': jsnes.Controller.BUTTON_UP,
+            'down': jsnes.Controller.BUTTON_DOWN,
+            'left': jsnes.Controller.BUTTON_LEFT,
+            'right': jsnes.Controller.BUTTON_RIGHT,
+            'a': jsnes.Controller.BUTTON_A,
+            'b': jsnes.Controller.BUTTON_B,
+            'start': jsnes.Controller.BUTTON_START,
+            'select': jsnes.Controller.BUTTON_SELECT
+        };
+
+        let activeKeys = new Set();
+        const touchArea = document.getElementById('controls-container');
+
+        function processTouches(e) {
+            e.preventDefault(); // Sangat penting: mencegah scroll layar
+            
+            const newlyPressed = new Set();
+            
+            // Loop semua jari yang menyentuh layar
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                // Deteksi elemen UI apa yang sedang ditimpa jari
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                
+                // FIX #10: Validate that the target is actually a game button inside controls
+                if (target && target.dataset && target.dataset.key && keyMapping.hasOwnProperty(target.dataset.key)) {
+                    newlyPressed.add(target.dataset.key);
+                }
+            }
+
+            // Cek tombol yang baru saja dilepas
+            for (let key of activeKeys) {
+                if (!newlyPressed.has(key)) {
+                    nes.buttonUp(1, keyMapping[key]);
+                    document.querySelectorAll(`[data-key="${key}"]`).forEach(el => el.classList.remove('pressed'));
+                }
+            }
+
+            // Cek tombol yang baru saja ditekan
+            for (let key of newlyPressed) {
+                if (!activeKeys.has(key)) {
+                    nes.buttonDown(1, keyMapping[key]);
+                    document.querySelectorAll(`[data-key="${key}"]`).forEach(el => el.classList.add('pressed'));
+                    
+                    // FIX #14: Haptic feedback on button press
+                    if (navigator.vibrate) navigator.vibrate(15);
+
+                    // Pastikan audio berjalan saat layar disentuh
+                    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                }
+            }
+            
+            activeKeys = newlyPressed;
+        }
+
+        // Pasang pendeteksi sentuhan pada seluruh area kontrol
+        touchArea.addEventListener('touchstart', processTouches, { passive: false });
+        touchArea.addEventListener('touchmove', processTouches, { passive: false });
+        touchArea.addEventListener('touchend', processTouches, { passive: false });
+        touchArea.addEventListener('touchcancel', processTouches, { passive: false });
+
+        // ==========================================
+        // 5b. FIX #6: KEYBOARD INPUT SUPPORT (Desktop)
+        // ==========================================
+        const kbMapping = {
+            'ArrowUp': 'up', 'w': 'up', 'W': 'up',
+            'ArrowDown': 'down', 's': 'down', 'S': 'down',
+            'ArrowLeft': 'left', 'a': 'left', 'A': 'left',
+            'ArrowRight': 'right', 'd': 'right', 'D': 'right',
+            'j': 'b', 'J': 'b', 'z': 'b', 'Z': 'b',
+            'k': 'a', 'K': 'a', 'x': 'a', 'X': 'a',
+            'Enter': 'start',
+            'Shift': 'select', 'ShiftRight': 'select'
+        };
+
+        const kbActiveKeys = new Set();
+
+        document.addEventListener('keydown', function(e) {
+            const mapped = kbMapping[e.key];
+            if (!mapped || kbActiveKeys.has(mapped)) return;
+            e.preventDefault();
+            kbActiveKeys.add(mapped);
+            nes.buttonDown(1, keyMapping[mapped]);
+            document.querySelectorAll(`[data-key="${mapped}"]`).forEach(el => el.classList.add('pressed'));
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        });
+
+        document.addEventListener('keyup', function(e) {
+            const mapped = kbMapping[e.key];
+            if (!mapped) return;
+            e.preventDefault();
+            kbActiveKeys.delete(mapped);
+            nes.buttonUp(1, keyMapping[mapped]);
+            document.querySelectorAll(`[data-key="${mapped}"]`).forEach(el => el.classList.remove('pressed'));
+        });
+
+        // ==========================================
+        // 6. FUNGSI UTILITAS & SAVE STATE
+        // ==========================================
+        const osdElement = document.getElementById('osd-text');
+        let osdTimer;
+        
+        function showStatus(text) {
+            osdElement.textContent = text;
+            osdElement.style.opacity = 1;
+            clearTimeout(osdTimer);
+            osdTimer = setTimeout(() => { osdElement.style.opacity = 0; }, 2500);
+        }
+
+        document.getElementById('btn-pause').addEventListener('click', () => {
+            if (!isRunning) return;
+            isPaused = !isPaused;
+            document.getElementById('btn-pause').textContent = isPaused ? "▶️ Lanjut" : "⏸️ Jeda";
+            showStatus(isPaused ? "Game Dijeda" : "Game Dilanjutkan");
+            
+            // Heningkan audio saat pause
+            if (isPaused && audioCtx) audioCtx.suspend();
+            else if (!isPaused && audioCtx) audioCtx.resume();
+        });
+
+        // FIX #8: Per-game save slots using ROM filename as key
+        document.getElementById('btn-save').addEventListener('click', () => {
+            if (!isRunning) return showStatus("Muat game terlebih dahulu!");
+            try {
+                const saveData = nes.toJSON();
+                const saveKey = 'nes_save_' + currentROMName;
+                localStorage.setItem(saveKey, JSON.stringify(saveData));
+                showStatus("Progress Disimpan! [" + currentROMName + "]");
+            } catch(e) {
+                console.error('Save error:', e);
+                showStatus("Gagal Menyimpan!");
+            }
+        });
+
+        document.getElementById('btn-load').addEventListener('click', () => {
+            if (!isRunning) return showStatus("Muat game terlebih dahulu!");
+            try {
+                const saveKey = 'nes_save_' + currentROMName;
+                const saveData = localStorage.getItem(saveKey);
+                if (saveData) {
+                    nes.fromJSON(JSON.parse(saveData));
+                    showStatus("Progress Dimuat! [" + currentROMName + "]");
+                } else {
+                    showStatus("Tidak ada data Save untuk " + currentROMName);
+                }
+            } catch(e) {
+                console.error('Load error:', e);
+                showStatus("Gagal Memuat!");
+            }
+        });
+
+        // FIX #13: Fullscreen toggle
+        document.getElementById('btn-fullscreen').addEventListener('click', () => {
+            const el = document.documentElement;
+            if (!document.fullscreenElement) {
+                (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen).call(el);
+            } else {
+                (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
+            }
+        });
+    </script>
+</body>
+</html>
