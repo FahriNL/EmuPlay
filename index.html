@@ -3,1207 +3,546 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PokéScanner & Collector</title>
-    <!-- Tailwind CSS -->
+    <title>PokéScanner Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Feather Icons -->
-    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            50% { transform: translateY(100%); }
-            100% { transform: translateY(-100%); }
-        }
-        .animate-scanline { animation: scanline 3s linear infinite; }
-        .perspective-1000 { perspective: 1000px; }
-        .rotate-y-12 { transform: rotateY(12deg) rotateX(12deg); }
-        .hide { display: none !important; }
-        
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
         * { -webkit-tap-highlight-color: transparent; }
+        body { background-color: #0f172a; color: white; margin: 0; overscroll-behavior: none; }
+        .scanner-line {
+            width: 100%; height: 2px; background: #facc15;
+            box-shadow: 0 0 10px 2px #facc15;
+            position: absolute; top: 0; left: 0;
+            animation: scan 3s infinite linear;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+        /* Sembunyikan elemen dengan class 'hidden' */
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="bg-slate-900 text-white font-sans h-[100dvh] w-full overflow-hidden flex flex-col">
+<body class="flex flex-col h-screen w-screen overflow-hidden text-sm sm:text-base">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between p-4 bg-slate-800 z-20 shadow-md flex-shrink-0">
+    <!-- HEADER -->
+    <header class="flex items-center justify-between px-4 py-3 bg-slate-800 shadow-md z-20">
         <div class="flex items-center space-x-2">
-            <i data-feather="crosshair" class="text-yellow-400 w-6 h-6"></i>
-            <h1 class="text-xl font-bold tracking-wider text-yellow-400">POKÉ<span class="text-white">DEX</span></h1>
+            <i data-lucide="scan-line" class="text-yellow-400"></i>
+            <h1 class="text-xl font-black tracking-wider"><span class="text-yellow-400">POKÉ</span>SCAN</h1>
         </div>
-        
-        <!-- Tabs Navigasi -->
-        <div class="flex bg-slate-700 rounded-lg p-1">
-            <button id="tab-scanner" class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-slate-900 text-yellow-400">
-                Scanner
-            </button>
-            <button id="tab-collection" class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-white flex items-center space-x-1">
-                <i data-feather="book-open" class="w-4 h-4 mr-1"></i>
-                <span class="hidden sm:inline">Koleksi</span>
-            </button>
+        <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700">
+            <button id="tab-scan" class="px-4 py-1.5 rounded-md font-bold bg-slate-700 text-yellow-400 transition-all">Scan</button>
+            <button id="tab-collection" class="px-4 py-1.5 rounded-md font-bold text-gray-400 transition-all">Koleksi</button>
         </div>
-    </div>
+        <button id="btn-settings" class="p-2 bg-slate-700 rounded-full text-white">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+    </header>
 
-    <!-- MAIN CONTAINER -->
-    <div class="flex-grow overflow-hidden relative bg-black" id="main-container">
-        
-        <!-- Peringatan API Key -->
-        <div id="api-key-warning" class="absolute top-4 left-4 right-4 bg-red-600 text-white p-4 rounded-xl z-50 shadow-xl border-2 border-red-400 hide">
-            <div class="flex items-start space-x-3">
-                <i data-feather="alert-octagon" class="w-6 h-6 flex-shrink-0"></i>
-                <div>
-                    <h3 class="font-bold">API Key Belum Diisi!</h3>
-                    <p class="text-sm mt-1 text-red-100">AI Scanner tidak akan bekerja. Silakan buka file index.html dan masukkan Gemini API Key Anda di baris konfigurasi.</p>
-                </div>
-            </div>
-        </div>
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 relative bg-black overflow-hidden">
 
-        <!-- SCANNER VIEW -->
-        <div id="view-scanner" class="absolute inset-0 flex flex-col w-full h-full">
-            <div class="relative flex-grow flex items-center justify-center overflow-hidden bg-black">
+        <!-- ================= VIEW: SCANNER ================= -->
+        <section id="view-scanner" class="absolute inset-0 flex flex-col h-full w-full">
+            
+            <!-- Camera & Preview Area -->
+            <div class="flex-1 relative flex items-center justify-center overflow-hidden">
+                <!-- Video Element (PLAYSINLINE is crucial for mobile) -->
+                <video id="camera-feed" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
                 
-                <video id="camera-video" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
-                
-                <div id="image-preview-container" class="absolute inset-0 flex items-center justify-center p-4 hide z-20 bg-black">
-                    <img id="image-preview" src="" alt="Preview" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl relative z-20" />
-                </div>
+                <!-- Preview Captured Image -->
+                <img id="image-preview" class="absolute inset-0 w-full h-full object-contain bg-black hidden z-10" />
 
-                <div id="camera-error" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 text-gray-400 bg-slate-900 z-10 hide">
-                    <i data-feather="camera-off" class="w-16 h-16 mb-4 text-red-500 opacity-80"></i>
-                    <h3 class="text-white font-bold mb-2">Kamera Tidak Tersedia</h3>
-                    <p class="mb-6 text-sm text-gray-500" id="error-message">Izin ditolak atau sedang dibuka secara offline.</p>
-                    <button id="btn-upload-fallback" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 active:scale-95 transition-transform text-white rounded-xl flex items-center mx-auto space-x-3 font-bold shadow-lg shadow-blue-900/50">
-                        <i data-feather="upload" class="w-5 h-5"></i> <span>Unggah dari Galeri</span>
+                <!-- Error Message -->
+                <div id="camera-error" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10 hidden p-6 text-center">
+                    <i data-lucide="camera-off" class="w-16 h-16 text-red-500 mb-4"></i>
+                    <h2 class="text-lg font-bold">Kamera Gagal Diakses</h2>
+                    <p class="text-gray-400 mt-2 mb-6">Mungkin berjalan tanpa HTTPS atau izin ditolak browser.</p>
+                    <button onclick="document.getElementById('file-upload').click()" class="bg-blue-600 px-6 py-3 rounded-xl font-bold flex items-center space-x-2">
+                        <i data-lucide="image"></i><span>Gunakan Galeri</span>
                     </button>
                 </div>
 
-                <div id="scanner-overlay" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
-                    <div class="w-3/4 max-w-[280px] aspect-[2.5/3.5] border-2 border-white/40 rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] relative overflow-hidden">
-                        <div class="absolute top-1/2 left-0 w-full h-0.5 bg-yellow-400 shadow-[0_0_15px_3px_#facc15] animate-scanline opacity-70"></div>
+                <!-- Overlay Frame -->
+                <div id="scanner-frame" class="absolute inset-0 z-10 pointer-events-none flex flex-col items-center justify-center">
+                    <div class="w-2/3 max-w-sm aspect-[2.5/3.5] border-2 border-white/50 rounded-xl relative overflow-hidden shadow-[0_0_0_999px_rgba(0,0,0,0.5)]">
+                        <div class="scanner-line"></div>
                     </div>
-                    <p class="mt-6 text-xs bg-black/50 text-white/80 px-3 py-1.5 rounded-full backdrop-blur-sm">Posisikan kartu di dalam area</p>
+                    <p class="mt-4 text-xs bg-black/60 px-3 py-1 rounded-full text-white">Posisikan kartu dalam kotak</p>
                 </div>
 
-                <div id="loading-overlay" class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm hide">
-                    <i data-feather="loader" class="w-16 h-16 text-yellow-400 animate-spin mb-4"></i>
-                    <h2 class="text-xl font-bold text-white mb-2">Menganalisis Kartu AI...</h2>
-                    <p class="text-gray-400 mt-2 text-sm text-center px-8">Menghubungkan ke Gemini & Database TCG...</p>
+                <!-- Loading Overlay -->
+                <div id="loading-overlay" class="absolute inset-0 bg-slate-900/90 z-30 hidden flex flex-col items-center justify-center">
+                    <i data-lucide="loader-2" class="w-12 h-12 text-yellow-400 animate-spin mb-4"></i>
+                    <h2 class="font-bold text-lg" id="loading-text">Menganalisis AI...</h2>
                 </div>
             </div>
 
             <!-- Bottom Controls -->
-            <div id="scanner-controls" class="bg-slate-900 pb-safe pt-4 px-6 flex justify-center items-center shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-20 flex-shrink-0 h-28">
-                <button id="btn-capture" class="relative group outline-none">
-                    <div class="absolute inset-0 bg-yellow-400 rounded-full blur group-hover:blur-md transition-all"></div>
-                    <div class="relative w-20 h-20 bg-white rounded-full flex items-center justify-center active:scale-90 transition-transform border-4 border-slate-900">
-                        <i data-feather="camera" class="w-8 h-8 text-slate-800"></i>
-                    </div>
+            <div id="scanner-controls" class="h-28 bg-slate-900 flex items-center justify-center border-t border-slate-800 z-20">
+                <button id="btn-capture" class="w-16 h-16 bg-white rounded-full border-4 border-slate-400 flex items-center justify-center active:scale-90 transition-transform">
+                    <div class="w-12 h-12 bg-white rounded-full border border-gray-300 flex items-center justify-center"></div>
                 </button>
-                <button id="btn-upload" class="absolute right-8 p-3.5 bg-slate-800 rounded-full text-white hover:bg-slate-700 active:scale-90 transition-transform outline-none">
-                    <i data-feather="image" class="w-6 h-6"></i>
+                <button onclick="document.getElementById('file-upload').click()" class="absolute right-8 p-3 bg-slate-800 rounded-full">
+                    <i data-lucide="upload" class="w-6 h-6"></i>
                 </button>
-                <input type="file" id="file-input" accept="image/*" class="hidden" />
+                <input type="file" id="file-upload" accept="image/*" class="hidden">
+            </div>
+
+        </section>
+
+        <!-- ================= VIEW: COLLECTION ================= -->
+        <section id="view-collection" class="absolute inset-0 bg-slate-900 hidden overflow-y-auto p-4 pb-20">
+            <h2 class="text-2xl font-bold mb-4">Galeri Digital</h2>
+            <div id="collection-empty" class="hidden flex flex-col items-center justify-center py-20 text-gray-500">
+                <i data-lucide="library" class="w-16 h-16 mb-4 opacity-50"></i>
+                <p>Koleksi masih kosong.</p>
+            </div>
+            <div id="collection-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <!-- Cards render here -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- API Key Settings Modal -->
+    <div id="modal-settings" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 p-6 rounded-2xl w-full max-w-sm border border-slate-700">
+            <h2 class="text-xl font-bold mb-2 flex items-center"><i data-lucide="key" class="mr-2"></i> Konfigurasi API</h2>
+            <p class="text-xs text-gray-400 mb-4">Masukkan Gemini API Key Anda. Data ini hanya disimpan di memori HP Anda (Local Storage).</p>
+            <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white mb-4 focus:outline-none focus:border-yellow-400">
+            <div class="flex space-x-3">
+                <button id="btn-save-key" class="flex-1 bg-yellow-500 text-slate-900 font-bold py-3 rounded-lg">Simpan</button>
+                <button onclick="document.getElementById('modal-settings').classList.add('hidden')" class="px-4 bg-slate-700 rounded-lg">Batal</button>
             </div>
         </div>
-
-        <!-- COLLECTION VIEW -->
-        <div id="view-collection" class="absolute inset-0 h-full overflow-y-auto bg-slate-900 p-4 pb-20 hide w-full">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-white">Koleksi Digital</h2>
-                <span id="storage-mode-badge" class="text-[10px] px-2 py-1 bg-slate-800 text-gray-400 rounded-full border border-slate-700">Offline Mode</span>
-            </div>
-            
-            <div id="collection-empty" class="text-center py-20 text-gray-500 hide">
-                <i data-feather="grid" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
-                <p>Belum ada kartu tersimpan.</p>
-                <button id="btn-start-scan" class="mt-4 text-yellow-400 font-medium hover:underline">
-                    Mulai Scan Kartu
-                </button>
-            </div>
-
-            <div id="collection-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <!-- Data koleksi masuk ke sini -->
-            </div>
-        </div>
-
-        <!-- RESULT MODAL -->
-        <div id="modal-result" class="absolute inset-0 z-50 bg-slate-900/95 backdrop-blur-xl flex flex-col overflow-y-auto hide">
-            <div class="p-4 flex justify-between items-center bg-transparent sticky top-0 z-10">
-                <h2 class="text-xl font-bold text-white drop-shadow-md">Data Kartu</h2>
-                <button id="btn-close-modal" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 active:scale-90 transition">
-                    <i data-feather="x" class="w-6 h-6 text-gray-300"></i>
-                </button>
-            </div>
-
-            <div class="flex-grow flex flex-col items-center px-4 pb-8 w-full max-w-md mx-auto">
-                <div id="result-success" class="w-full flex flex-col items-center hide">
-                    <div class="w-2/3 max-w-[220px] aspect-[2.5/3.5] rounded-xl shadow-2xl mb-6 relative group perspective-1000">
-                        <img id="digital-card-img" src="" alt="Card" class="w-full h-full rounded-xl object-cover shadow-[0_20px_50px_rgba(0,0,0,0.7)] hide" />
-                        <div id="digital-card-fallback" class="w-full h-full bg-slate-800 border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center p-4 text-center hide">
-                            <i data-feather="image" class="w-8 h-8 text-gray-500 mb-2"></i>
-                            <p class="text-xs text-gray-400">Gambar HD tidak tersedia.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-800 w-full rounded-2xl p-5 mb-6 shadow-lg border border-slate-700">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex-1 pr-2">
-                                <h1 id="res-card-name" class="text-2xl font-black text-white leading-tight break-words">Name</h1>
-                                <p id="res-card-number" class="text-gray-400 font-mono text-sm mt-1">Number</p>
-                            </div>
-                            <div id="res-badge" class="px-3 py-1.5 rounded-lg border flex-shrink-0 text-center min-w-[70px]">
-                                <span id="res-badge-text" class="font-bold text-sm"></span>
-                            </div>
-                        </div>
-                        
-                        <div id="res-digital-info" class="space-y-2 text-sm hide border-t border-slate-700 pt-3">
-                            <div class="flex justify-between">
-                                <span class="text-gray-400">Set</span>
-                                <span id="res-set-name" class="font-semibold text-white text-right max-w-[60%] truncate"></span>
-                            </div>
-                            <div class="flex justify-between pt-1">
-                                <span class="text-gray-400">Rarity</span>
-                                <span id="res-rarity" class="font-semibold text-white text-right"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex w-full space-x-3">
-                        <button id="btn-save-collection" class="flex-1 bg-yellow-500 hover:bg-yellow-400 active:scale-95 text-slate-900 font-bold py-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-lg shadow-yellow-500/20">
-                            <i data-feather="save" class="w-5 h-5"></i>
-                            <span id="save-text">Simpan</span>
-                        </button>
-                        <button id="btn-scan-again" class="flex-1 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white font-bold py-4 rounded-xl flex items-center justify-center transition">
-                            Ulangi
-                        </button>
-                    </div>
-                </div>
-
-                <div id="result-failed" class="text-center py-12 hide">
-                    <i data-feather="alert-triangle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i>
-                    <h3 class="text-2xl font-bold text-white mb-2">Bukan Kartu TCG</h3>
-                    <p class="text-gray-400 mb-8" id="failed-reason">Gambar tidak terdeteksi sebagai kartu Pokémon, Trainer, atau Energy.</p>
-                    <button id="btn-failed-back" class="px-8 py-3 bg-slate-700 text-white rounded-xl font-bold active:scale-95 transition">Kembali Scan</button>
-                </div>
-            </div>
-        </div>
-
     </div>
 
-    <canvas id="capture-canvas" class="hidden"></canvas>
+    <!-- Result Modal -->
+    <div id="modal-result" class="fixed inset-0 bg-slate-900/95 z-40 hidden flex flex-col p-4 overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="font-bold text-xl">Hasil Pindai</h2>
+            <button id="btn-close-result" class="p-2 bg-slate-800 rounded-full"><i data-lucide="x"></i></button>
+        </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        <div class="flex-1 flex flex-col items-center max-w-sm mx-auto w-full pb-8">
+            <!-- Digital Image -->
+            <div class="w-48 aspect-[2.5/3.5] mb-6 relative">
+                <img id="res-image" src="" class="w-full h-full object-cover rounded-xl shadow-2xl hidden border border-slate-700">
+                <div id="res-no-image" class="w-full h-full bg-slate-800 rounded-xl border-2 border-dashed border-slate-600 flex flex-col items-center justify-center p-4 text-center">
+                    <i data-lucide="image-off" class="mb-2 text-gray-500"></i>
+                    <p class="text-xs text-gray-500">Versi digital tidak ditemukan.</p>
+                </div>
+            </div>
 
-        // ==========================================
-        // KONFIGURASI PENTING UNTUK GITHUB PAGES
-        // ==========================================
-        // Anda HARUS mengganti string kosong ini dengan API Key Anda dari Google AI Studio
-        const myGeminiApiKey = ""; // <--- MASUKKAN API KEY DI SINI
-        // ==========================================
+            <!-- Card Data -->
+            <div class="bg-slate-800 w-full rounded-2xl p-4 shadow-lg border border-slate-700 mb-6">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 id="res-name" class="text-2xl font-black text-white leading-tight">Nama</h3>
+                        <p id="res-number" class="text-xs text-gray-400 font-mono">No Number</p>
+                    </div>
+                    <span id="res-type-badge" class="px-2 py-1 text-xs font-bold rounded bg-slate-700">TYPE</span>
+                </div>
+                <div class="flex justify-between text-sm mt-4 pt-3 border-t border-slate-700">
+                    <span class="text-gray-400">Set</span>
+                    <span id="res-set" class="font-bold text-right text-xs truncate max-w-[60%]">Unknown</span>
+                </div>
+            </div>
 
-        const injectedApiKey = typeof apiKey !== 'undefined' ? apiKey : "";
-        const finalApiKey = myGeminiApiKey || injectedApiKey;
+            <!-- Actions -->
+            <div class="flex w-full space-x-3 mt-auto">
+                <button id="btn-save-card" class="flex-1 bg-yellow-500 text-slate-900 font-bold py-4 rounded-xl flex justify-center items-center">
+                    <i data-lucide="save" class="w-5 h-5 mr-2"></i> Simpan
+                </button>
+                <button id="btn-rescan" class="flex-1 bg-slate-700 font-bold py-4 rounded-xl">Pindai Ulang</button>
+            </div>
+        </div>
+    </div>
 
-        // Firebase Graceful Fallback
-        let useFirebase = false;
-        let db = null;
-        let auth = null;
-        let currentUser = null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pokemon-scanner-app';
+    <!-- Hidden Canvas for capturing -->
+    <canvas id="canvas" class="hidden"></canvas>
 
-        try {
-            const fbConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
-            const fbConfig = JSON.parse(fbConfigString);
-            
-            if (Object.keys(fbConfig).length > 0) {
-                const app = initializeApp(fbConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                useFirebase = true;
-                document.getElementById('storage-mode-badge').textContent = 'Cloud Mode';
-            }
-        } catch(e) {
-            console.log("Firebase tidak terkonfigurasi. Berjalan di Mode Offline (Local Storage).");
-        }
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
 
-        let mediaStream = null;
-        let currentScanResult = null;
-        let currentDigitalCard = null;
-        let unsubscribeFirestore = null;
+        // --- STATE & CONFIG ---
+        let currentStream = null;
+        let pendingCardData = null; // Data kartu yang sedang di-scan
+        let collection = JSON.parse(localStorage.getItem('poke_collection') || '[]');
 
+        // --- DOM ELEMENTS ---
         const els = {
-            tabScanner: document.getElementById('tab-scanner'),
-            tabCollection: document.getElementById('tab-collection'),
+            video: document.getElementById('camera-feed'),
+            preview: document.getElementById('image-preview'),
+            canvas: document.getElementById('canvas'),
+            btnCapture: document.getElementById('btn-capture'),
+            fileUpload: document.getElementById('file-upload'),
+            camError: document.getElementById('camera-error'),
+            overlay: document.getElementById('scanner-frame'),
+            controls: document.getElementById('scanner-controls'),
+            loading: document.getElementById('loading-overlay'),
+            loadingText: document.getElementById('loading-text'),
+            
             viewScanner: document.getElementById('view-scanner'),
             viewCollection: document.getElementById('view-collection'),
-            video: document.getElementById('camera-video'),
-            cameraError: document.getElementById('camera-error'),
-            errorMessage: document.getElementById('error-message'),
-            scannerOverlay: document.getElementById('scanner-overlay'),
-            scannerControls: document.getElementById('scanner-controls'),
-            btnCapture: document.getElementById('btn-capture'),
-            btnUpload: document.getElementById('btn-upload'),
-            btnUploadFallback: document.getElementById('btn-upload-fallback'),
-            fileInput: document.getElementById('file-input'),
-            canvas: document.getElementById('capture-canvas'),
-            imagePreviewContainer: document.getElementById('image-preview-container'),
-            imagePreview: document.getElementById('image-preview'),
-            loadingOverlay: document.getElementById('loading-overlay'),
-            modalResult: document.getElementById('modal-result'),
-            btnCloseModal: document.getElementById('btn-close-modal'),
-            resultSuccess: document.getElementById('result-success'),
-            resultFailed: document.getElementById('result-failed'),
-            btnSaveCollection: document.getElementById('btn-save-collection'),
-            btnScanAgain: document.getElementById('btn-scan-again'),
-            btnFailedBack: document.getElementById('btn-failed-back'),
-            saveText: document.getElementById('save-text'),
-            collectionEmpty: document.getElementById('collection-empty'),
-            collectionGrid: document.getElementById('collection-grid'),
-            btnStartScan: document.getElementById('btn-start-scan'),
-            apiKeyWarning: document.getElementById('api-key-warning'),
+            tabScan: document.getElementById('tab-scan'),
+            tabCollection: document.getElementById('tab-collection'),
             
-            imgDigitalCard: document.getElementById('digital-card-img'),
-            fallbackDigitalCard: document.getElementById('digital-card-fallback'),
-            resCardName: document.getElementById('res-card-name'),
-            resCardNumber: document.getElementById('res-card-number'),
-            resBadge: document.getElementById('res-badge'),
-            resBadgeText: document.getElementById('res-badge-text'),
-            resDigitalInfo: document.getElementById('res-digital-info'),
-            resSetName: document.getElementById('res-set-name'),
-            resRarity: document.getElementById('res-rarity')
+            modalSet: document.getElementById('modal-settings'),
+            inpApiKey: document.getElementById('input-api-key'),
+            btnSaveKey: document.getElementById('btn-save-key'),
+            btnSettings: document.getElementById('btn-settings'),
+
+            modalRes: document.getElementById('modal-result'),
+            resImg: document.getElementById('res-image'),
+            resNoImg: document.getElementById('res-no-image'),
+            resName: document.getElementById('res-name'),
+            resNum: document.getElementById('res-number'),
+            resType: document.getElementById('res-type-badge'),
+            resSet: document.getElementById('res-set'),
+            btnSaveCard: document.getElementById('btn-save-card'),
+            btnRescan: document.getElementById('btn-rescan'),
+            btnCloseRes: document.getElementById('btn-close-result'),
+
+            grid: document.getElementById('collection-grid'),
+            emptyState: document.getElementById('collection-empty')
         };
 
-        feather.replace();
+        // --- 1. API KEY MANAGEMENT ---
+        const getApiKey = () => localStorage.getItem('gemini_api_key');
+        
+        els.btnSettings.addEventListener('click', () => {
+            els.inpApiKey.value = getApiKey() || '';
+            els.modalSet.classList.remove('hidden');
+        });
 
-        // 1. Inisialisasi Auth (Hanya jika pakai Firebase)
-        if (useFirebase) {
-            const initAuth = async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (err) { console.error("Auth error:", err); }
-            };
-            initAuth();
-            onAuthStateChanged(auth, (user) => {
-                currentUser = user;
-                if (user) loadCollection();
-            });
-        } else {
-            // Mode Local Storage
-            loadCollection();
+        els.btnSaveKey.addEventListener('click', () => {
+            const key = els.inpApiKey.value.trim();
+            if(key) {
+                localStorage.setItem('gemini_api_key', key);
+                els.modalSet.classList.add('hidden');
+                alert("API Key berhasil disimpan!");
+            }
+        });
+
+        // Prompt API Key on first load
+        if(!getApiKey()) {
+            els.modalSet.classList.remove('hidden');
         }
 
-        // Cek API Key
-        if (!finalApiKey) {
-            els.apiKeyWarning.classList.remove('hide');
-        }
-
-        // 2. Kamera Logika
-        const startCamera = async () => {
-            els.cameraError.classList.add('hide');
-            els.scannerOverlay.classList.remove('hide');
-            els.scannerControls.classList.remove('hide');
+        // --- 2. CAMERA ENGINE ---
+        async function startCamera() {
+            els.preview.classList.add('hidden');
+            els.preview.src = '';
+            els.camError.classList.add('hidden');
+            els.overlay.classList.remove('hidden');
+            els.controls.classList.remove('hidden');
 
             try {
-                if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
-                
-                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                if (currentStream) {
+                    currentStream.getTracks().forEach(t => t.stop());
+                }
+                // Paksa kamera belakang
+                currentStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: { ideal: "environment" } },
                     audio: false
                 });
-                
-                els.video.srcObject = mediaStream;
+                els.video.srcObject = currentStream;
                 await els.video.play();
             } catch (err) {
-                console.warn("Kamera gagal:", err);
-                els.cameraError.classList.remove('hide');
-                els.scannerOverlay.classList.add('hide');
-                els.scannerControls.classList.add('hide');
+                console.error("Camera Error:", err);
+                els.camError.classList.remove('hidden');
+                els.overlay.classList.add('hidden');
+                els.controls.classList.add('hidden');
+            }
+        }
+
+        function stopCamera() {
+            if(currentStream) {
+                currentStream.getTracks().forEach(t => t.stop());
+                currentStream = null;
+            }
+        }
+
+        // --- 3. TAB NAVIGATION ---
+        function switchTab(tab) {
+            if (tab === 'scan') {
+                els.viewScanner.classList.remove('hidden');
+                els.viewCollection.classList.add('hidden');
                 
-                if (err.name === 'NotAllowedError') {
-                    els.errorMessage.textContent = "Akses kamera ditolak browser. Mohon izinkan kamera di setelan situs.";
-                } else {
-                    els.errorMessage.textContent = "Kamera tidak terdeteksi (Pastikan menggunakan HTTPS).";
-                }
-            }
-        };
-
-        const stopCamera = () => {
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(track => track.stop());
-                mediaStream = null;
-            }
-        };
-
-        // 3. UI Navigation
-        const switchTab = (tabName) => {
-            if (tabName === 'scanner') {
-                els.tabScanner.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-slate-900 text-yellow-400";
-                els.tabCollection.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-white flex items-center space-x-1";
-                els.viewScanner.classList.remove('hide');
-                els.viewCollection.classList.add('hide');
-                resetScannerUI();
+                els.tabScan.className = "px-4 py-1.5 rounded-md font-bold bg-slate-700 text-yellow-400 transition-all";
+                els.tabCollection.className = "px-4 py-1.5 rounded-md font-bold text-gray-400 transition-all";
                 startCamera();
             } else {
-                els.tabCollection.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-slate-900 text-yellow-400 flex items-center space-x-1";
-                els.tabScanner.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-white";
-                els.viewScanner.classList.add('hide');
-                els.viewCollection.classList.remove('hide');
-                stopCamera();
-            }
-            feather.replace();
-        };
-
-        els.tabScanner.addEventListener('click', () => switchTab('scanner'));
-        els.tabCollection.addEventListener('click', () => switchTab('collection'));
-        els.btnStartScan.addEventListener('click', () => switchTab('scanner'));
-
-        // 4. API TCG & Gemini AI
-        const fetchDigitalCardInfo = async (cardName, cardNumberStr, supertype) => {
-            try {
-                let cleanNumber = cardNumberStr ? cardNumberStr.split('/')[0].replace(/^0+/, '') : "";
-                const safeQueryName = cardName.replace(/"/g, '\\"');
-                const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${safeQueryName}"`);
-                const data = await response.json();
+                els.viewScanner.classList.add('hidden');
+                els.viewCollection.classList.remove('hidden');
                 
-                if (data.data && data.data.length > 0) {
-                    let matchedCards = data.data;
-                    if (supertype) matchedCards = matchedCards.filter(c => c.supertype && c.supertype.toUpperCase() === supertype.toUpperCase());
-
-                    let matchedCard = null;
-                    if (cleanNumber && matchedCards.length > 0) {
-                        matchedCard = matchedCards.find(c => c.number === cleanNumber || c.number === cardNumberStr.split('/')[0]);
-                    }
-                    if (!matchedCard && matchedCards.length > 0) matchedCard = matchedCards[0];
-                    if (!matchedCard && data.data.length > 0) matchedCard = data.data[0];
-
-                    if (matchedCard) {
-                        return {
-                            imageUrl: matchedCard.images.large || matchedCard.images.small,
-                            tcgUrl: matchedCard.tcgplayer?.url || "#",
-                            rarity: matchedCard.rarity || "Unknown",
-                            setName: matchedCard.set?.name || "Unknown Set",
-                            supertype: matchedCard.supertype
-                        };
-                    }
-                }
-                return null;
-            } catch (err) {
-                console.error("Gagal ambil TCG:", err);
-                return null;
+                els.tabCollection.className = "px-4 py-1.5 rounded-md font-bold bg-slate-700 text-yellow-400 transition-all";
+                els.tabScan.className = "px-4 py-1.5 rounded-md font-bold text-gray-400 transition-all";
+                stopCamera();
+                renderCollection();
             }
-        };
+        }
 
-        const analyzeImage = async (base64Data) => {
-            if (!finalApiKey) {
-                alert("API Key tidak ada! Silakan cek peringatan merah di atas aplikasi.");
-                resetScannerUI();
+        els.tabScan.addEventListener('click', () => switchTab('scan'));
+        els.tabCollection.addEventListener('click', () => switchTab('collection'));
+
+        // --- 4. IMAGE PROCESSING & AI ---
+        function captureImage() {
+            if (!els.video.videoWidth) return null;
+            els.canvas.width = els.video.videoWidth;
+            els.canvas.height = els.video.videoHeight;
+            els.canvas.getContext('2d').drawImage(els.video, 0, 0);
+            return els.canvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        function handleImageSelection(base64Image) {
+            els.preview.src = base64Image;
+            els.preview.classList.remove('hidden');
+            els.overlay.classList.add('hidden');
+            els.camError.classList.add('hidden');
+            stopCamera();
+            
+            // Extract purely the base64 string
+            const pureBase64 = base64Image.split(',')[1];
+            processWithAI(pureBase64);
+        }
+
+        els.btnCapture.addEventListener('click', () => {
+            const img = captureImage();
+            if(img) handleImageSelection(img);
+        });
+
+        els.fileUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => handleImageSelection(ev.target.result);
+            reader.readAsDataURL(file);
+        });
+
+        // TCG API Fetcher
+        async function fetchTCGData(name, number) {
+            try {
+                const qName = name.replace(/"/g, '');
+                let url = `https://api.pokemontcg.io/v2/cards?q=name:"${qName}"`;
+                
+                let cleanNum = "";
+                if(number) {
+                    cleanNum = number.split('/')[0].replace(/^0+/, ''); // Hapus 0 di depan (contoh 080 -> 80)
+                }
+
+                const res = await fetch(url);
+                const json = await res.json();
+                
+                if (json.data && json.data.length > 0) {
+                    // Cari yang nomornya cocok
+                    let card = null;
+                    if(cleanNum) {
+                        card = json.data.find(c => c.number == cleanNum || c.number == number.split('/')[0]);
+                    }
+                    if(!card) card = json.data[0];
+
+                    return {
+                        image: card.images.large || card.images.small,
+                        set: card.set?.name || "Unknown Set",
+                        supertype: card.supertype
+                    };
+                }
+            } catch (e) {
+                console.error("TCG API Error", e);
+            }
+            return null;
+        }
+
+        // Gemini AI Call
+        async function processWithAI(base64Data) {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                alert("API Key belum disetting! Buka menu settings (ikon gir).");
                 startCamera();
                 return;
             }
 
-            els.loadingOverlay.classList.remove('hide');
-            els.scannerControls.classList.add('hide');
+            els.loading.classList.remove('hidden');
+            els.loadingText.textContent = "AI sedang melihat kartu...";
 
-            const promptText = `Analisis kartu ini. 
-            1. isPokemonTCGCard: boolean
-            2. cardName: nama karakter pokemon, nama trainer card, atau tipe energi.
-            3. supertype: POKEMON, TRAINER, atau ENERGY
-            4. hp: angka HP (kosongkan jika Trainer/Energy)
-            5. cardNumber: nomor seri kartu di bawah (contoh: 12/100). Kosongkan jika tidak ada.`;
-
-            const schema = {
-                type: "OBJECT",
-                properties: {
-                    isPokemonTCGCard: { type: "BOOLEAN" },
-                    cardName: { type: "STRING" },
-                    supertype: { type: "STRING" },
-                    hp: { type: "STRING" },
-                    cardNumber: { type: "STRING" }
-                },
-                required: ["isPokemonTCGCard"]
-            };
+            const prompt = `Analisis kartu TCG ini. Kembalikan HANYA format JSON murni tanpa markdown.
+            Format:
+            {
+                "isCard": true/false,
+                "name": "Nama kartu",
+                "type": "POKEMON", "TRAINER", atau "ENERGY",
+                "hp": "angka hp atau kosong",
+                "number": "nomor di pojok bawah misal 080/100, atau kosong"
+            }`;
 
             const payload = {
-                contents: [{ role: "user", parts: [{ text: promptText }, { inlineData: { mimeType: "image/jpeg", data: base64Data } }] }],
-                generationConfig: { responseMimeType: "application/json", responseSchema: schema }
-            };
-
-            let retries = 3;
-            while(retries > 0) {
-                try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${finalApiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) throw new Error("API Limit / Error");
-                    const data = await response.json();
-                    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    
-                    if (responseText) {
-                        currentScanResult = JSON.parse(responseText);
-                        if (currentScanResult.isPokemonTCGCard && currentScanResult.cardName) {
-                            currentDigitalCard = await fetchDigitalCardInfo(currentScanResult.cardName, currentScanResult.cardNumber, currentScanResult.supertype);
-                        }
-                        showResultModal();
-                        return; 
-                    }
-                } catch (err) {
-                    retries--;
-                    if(retries === 0) {
-                        alert("Gagal koneksi ke AI. Pastikan internet Anda jalan dan API Key valid.");
-                        resetScannerUI();
-                        startCamera();
-                    }
-                    await new Promise(r => setTimeout(r, 1500));
-                }
-            }
-        };
-
-        const captureAndProcess = () => {
-            const canvas = els.canvas;
-            const video = els.video;
-            
-            if (video.videoWidth === 0) return;
-
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            els.imagePreview.src = imageDataUrl;
-            els.imagePreviewContainer.classList.remove('hide');
-            els.scannerOverlay.classList.add('hide');
-            stopCamera();
-            
-            analyzeImage(imageDataUrl.split(',')[1]);
-        };
-
-        const handleFileUpload = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                els.imagePreview.src = event.target.result;
-                els.imagePreviewContainer.classList.remove('hide');
-                els.scannerOverlay.classList.add('hide');
-                els.cameraError.classList.add('hide');
-                stopCamera();
-                analyzeImage(event.target.result.split(',')[1]);
-            };
-            reader.readAsDataURL(file);
-        };
-
-        els.btnCapture.addEventListener('click', captureAndProcess);
-        els.btnUpload.addEventListener('click', () => els.fileInput.click());
-        els.btnUploadFallback.addEventListener('click', () => els.fileInput.click());
-        els.fileInput.addEventListener('change', handleFileUpload);
-
-        // 5. Result Modal UI
-        const showResultModal = () => {
-            els.loadingOverlay.classList.add('hide');
-            els.modalResult.classList.remove('hide');
-
-            if (currentScanResult && currentScanResult.isPokemonTCGCard) {
-                els.resultSuccess.classList.remove('hide');
-                els.resultFailed.classList.add('hide');
-
-                els.resCardName.textContent = currentScanResult.cardName || 'Unknown Card';
-                els.resCardNumber.textContent = currentScanResult.cardNumber || 'No Card Number';
-
-                let sType = (currentScanResult.supertype || "").toUpperCase();
-                els.resBadge.className = "px-3 py-1.5 rounded-lg border flex-shrink-0 text-center min-w-[70px]"; 
-                
-                if (sType === 'TRAINER') {
-                    els.resBadge.classList.add("bg-blue-900/50", "border-blue-500", "text-blue-400");
-                    els.resBadgeText.textContent = "TRAINER";
-                } else if (sType === 'ENERGY') {
-                    els.resBadge.classList.add("bg-green-900/50", "border-green-500", "text-green-400");
-                    els.resBadgeText.textContent = "ENERGY";
-                } else {
-                    els.resBadge.classList.add("bg-red-900/50", "border-red-500", "text-red-500");
-                    els.resBadgeText.textContent = currentScanResult.hp ? `HP ${currentScanResult.hp}` : "PKMN";
-                }
-
-                if (currentDigitalCard) {
-                    els.imgDigitalCard.src = currentDigitalCard.imageUrl;
-                    els.imgDigitalCard.classList.remove('hide');
-                    els.fallbackDigitalCard.classList.add('hide');
-                    els.resDigitalInfo.classList.remove('hide');
-                    els.resSetName.textContent = currentDigitalCard.setName;
-                    els.resRarity.textContent = currentDigitalCard.rarity;
-                } else {
-                    els.imgDigitalCard.classList.add('hide');
-                    els.fallbackDigitalCard.classList.remove('hide');
-                    els.resDigitalInfo.classList.add('hide');
-                }
-            } else {
-                els.resultSuccess.classList.add('hide');
-                els.resultFailed.classList.remove('hide');
-            }
-            feather.replace();
-        };
-
-        const resetScannerUI = () => {
-            currentScanResult = null;
-            currentDigitalCard = null;
-            els.fileInput.value = '';
-            els.modalResult.classList.add('hide');
-            els.loadingOverlay.classList.add('hide');
-            els.imagePreviewContainer.classList.add('hide');
-            els.imagePreview.src = '';
-            els.scannerOverlay.classList.remove('hide');
-            els.scannerControls.classList.remove('hide');
-            els.btnSaveCollection.disabled = false;
-            els.saveText.textContent = "Simpan";
-        };
-
-        const closeAndRestartScanner = () => {
-            resetScannerUI();
-            startCamera();
-        };
-
-        els.btnCloseModal.addEventListener('click', closeAndRestartScanner);
-        els.btnScanAgain.addEventListener('click', closeAndRestartScanner);
-        els.btnFailedBack.addEventListener('click', closeAndRestartScanner);
-
-        // 6. Menyimpan & Mengambil Koleksi (Firebase OR Local Storage)
-        els.btnSaveCollection.addEventListener('click', async () => {
-            if (!currentScanResult) return;
-            els.btnSaveCollection.disabled = true;
-            els.saveText.textContent = "Menyimpan...";
-
-            const cardData = {
-                name: currentScanResult.cardName,
-                supertype: currentScanResult.supertype || 'Pokemon',
-                hp: currentScanResult.hp || '',
-                cardNumber: currentScanResult.cardNumber || '',
-                imageUrl: currentDigitalCard ? currentDigitalCard.imageUrl : null,
-                setName: currentDigitalCard ? currentDigitalCard.setName : 'Unknown Set',
-                rarity: currentDigitalCard ? currentDigitalCard.rarity : 'Unknown',
-                timestamp: Date.now()
+                contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/jpeg", data: base64Data } }] }]
             };
 
             try {
-                if (useFirebase && currentUser) {
-                    await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'pokemon_cards'), cardData);
-                } else {
-                    // Fallback to LocalStorage
-                    const saved = JSON.parse(localStorage.getItem('poke_collection') || '[]');
-                    cardData.id = 'loc_' + Date.now(); // Generate fake ID
-                    saved.push(cardData);
-                    localStorage.setItem('poke_collection', JSON.stringify(saved));
-                }
-                switchTab('collection');
-                if(!useFirebase) loadCollection(); // Force refresh local data
-            } catch (err) {
-                alert("Gagal menyimpan kartu.");
-                els.btnSaveCollection.disabled = false;
-                els.saveText.textContent = "Simpan";
-            }
-        });
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-        function loadCollection() {
-            if (useFirebase && currentUser) {
-                if (unsubscribeFirestore) unsubscribeFirestore();
-                unsubscribeFirestore = onSnapshot(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'pokemon_cards'), 
-                (snapshot) => {
-                    const cards = [];
-                    snapshot.forEach(doc => cards.push({ id: doc.id, ...doc.data() }));
-                    cards.sort((a, b) => b.timestamp - a.timestamp);
-                    renderCollection(cards);
-                }, (error) => console.error(error));
-            } else {
-                // LocalStorage Mode
-                const cards = JSON.parse(localStorage.getItem('poke_collection') || '[]');
-                cards.sort((a, b) => b.timestamp - a.timestamp);
-                renderCollection(cards);
+                if (!res.ok) throw new Error("API Request Failed. Cek API Key Anda.");
+                
+                const data = await res.json();
+                let textResult = data.candidates[0].content.parts[0].text;
+                
+                // BERSIHKAN MARKDOWN ```json ... ``` YANG KADANG DIBERIKAN AI
+                textResult = textResult.replace(/```json/gi, '').replace(/```/g, '').trim();
+                
+                const aiResult = JSON.parse(textResult);
+
+                if (aiResult.isCard && aiResult.name) {
+                    els.loadingText.textContent = "Mencari gambar HD...";
+                    const tcgData = await fetchTCGData(aiResult.name, aiResult.number);
+                    
+                    // Siapkan state untuk disimpan
+                    pendingCardData = {
+                        id: 'card_' + Date.now(),
+                        name: aiResult.name,
+                        type: (aiResult.type || 'POKEMON').toUpperCase(),
+                        hp: aiResult.hp || '',
+                        number: aiResult.number || '',
+                        image: tcgData ? tcgData.image : null,
+                        set: tcgData ? tcgData.set : 'Unknown Set',
+                        timestamp: Date.now()
+                    };
+
+                    showResultModal(pendingCardData);
+                } else {
+                    alert("Gambar tidak dikenali sebagai kartu TCG.");
+                    startCamera();
+                }
+
+            } catch (e) {
+                console.error(e);
+                alert("Terjadi kesalahan: " + e.message);
+                startCamera();
+            } finally {
+                els.loading.classList.add('hidden');
             }
         }
 
-        const renderCollection = (cards) => {
-            els.collectionGrid.innerHTML = '';
-            if (cards.length === 0) {
-                els.collectionEmpty.classList.remove('hide');
-                els.collectionGrid.classList.add('hide');
+        // --- 5. RESULT MODAL UI ---
+        function showResultModal(card) {
+            els.modalRes.classList.remove('hidden');
+            els.resName.textContent = card.name;
+            els.resNum.textContent = card.number || 'No Number';
+            els.resSet.textContent = card.set;
+
+            // Set Badge
+            els.resType.className = "px-2 py-1 text-xs font-bold rounded";
+            if(card.type === 'TRAINER') {
+                els.resType.classList.add('bg-blue-900', 'text-blue-300');
+                els.resType.textContent = 'TRAINER';
+            } else if (card.type === 'ENERGY') {
+                els.resType.classList.add('bg-green-900', 'text-green-300');
+                els.resType.textContent = 'ENERGY';
             } else {
-                els.collectionEmpty.classList.add('hide');
-                els.collectionGrid.classList.remove('hide');
-
-                cards.forEach(card => {
-                    let badgeColor = "text-red-400";
-                    let badgeText = card.hp ? `HP ${card.hp}` : "PKMN";
-                    let sType = (card.supertype || "").toUpperCase();
-                    
-                    if (sType === 'TRAINER') { badgeColor = "text-blue-400"; badgeText = "TRAINER"; } 
-                    else if (sType === 'ENERGY') { badgeColor = "text-green-400"; badgeText = "ENERGY"; }
-
-                    const cardEl = document.createElement('div');
-                    cardEl.className = "bg-slate-800 rounded-xl overflow-hidden shadow-lg border border-slate-700 group relative";
-                    cardEl.innerHTML = `
-                        <div class="aspect-[2.5/3.5] bg-slate-900 relative">
-                            ${card.imageUrl ? 
-                                `<img src="${card.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />` 
-                                : `<div class="w-full h-full flex flex-col justify-center items-center p-2 text-center text-xs text-gray-500">${card.name}</div>`
-                            }
-                            <button data-id="${card.id}" class="btn-delete absolute top-2 right-2 p-2 bg-red-600/90 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                <i data-feather="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-bold text-white text-xs truncate">${card.name}</h3>
-                            <div class="flex justify-between items-center mt-1">
-                                <span class="text-[10px] text-gray-400 truncate w-1/2">${card.setName}</span>
-                                <span class="text-[10px] font-bold ${badgeColor}">${badgeText}</span>
-                            </div>
-                        </div>
-                    `;
-                    els.collectionGrid.appendChild(cardEl);
-                });
-
-                document.querySelectorAll('.btn-delete').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const id = e.currentTarget.getAttribute('data-id');
-                        if (useFirebase && currentUser) {
-                            await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'pokemon_cards', id));
-                        } else {
-                            let saved = JSON.parse(localStorage.getItem('poke_collection') || '[]');
-                            saved = saved.filter(c => c.id !== id);
-                            localStorage.setItem('poke_collection', JSON.stringify(saved));
-                            loadCollection(); // Refresh
-                        }
-                    });
-                });
-                feather.replace();
+                els.resType.classList.add('bg-red-900', 'text-red-300');
+                els.resType.textContent = card.hp ? `HP ${card.hp}` : 'POKÉMON';
             }
-        };
 
-        // Mulai aplikasi
-        switchTab('scanner');
-
-    </script>
-</body>
-</html>
-
-
-```
-                
-                <div id="result-success" class="w-full flex flex-col items-center hide">
-                    <!-- Kartu TCG Image -->
-                    <div class="w-2/3 max-w-[220px] aspect-[2.5/3.5] rounded-xl shadow-2xl mb-6 relative group perspective-1000">
-                        <img id="digital-card-img" src="" alt="Card" class="w-full h-full rounded-xl object-cover shadow-[0_20px_50px_rgba(0,0,0,0.7)] hide" />
-                        <div id="digital-card-fallback" class="w-full h-full bg-slate-800 border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center p-4 text-center hide">
-                            <i data-feather="image" class="w-8 h-8 text-gray-500 mb-2"></i>
-                            <p class="text-xs text-gray-400">Gambar HD tidak tersedia.</p>
-                        </div>
-                    </div>
-
-                    <!-- Detail Data -->
-                    <div class="bg-slate-800 w-full rounded-2xl p-5 mb-6 shadow-lg border border-slate-700">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex-1 pr-2">
-                                <h1 id="res-card-name" class="text-2xl font-black text-white leading-tight break-words">Name</h1>
-                                <p id="res-card-number" class="text-gray-400 font-mono text-sm mt-1">Number</p>
-                            </div>
-                            <div id="res-badge" class="px-3 py-1.5 rounded-lg border flex-shrink-0 text-center min-w-[70px]">
-                                <span id="res-badge-text" class="font-bold text-sm"></span>
-                            </div>
-                        </div>
-                        
-                        <div id="res-digital-info" class="space-y-2 text-sm hide border-t border-slate-700 pt-3">
-                            <div class="flex justify-between">
-                                <span class="text-gray-400">Set</span>
-                                <span id="res-set-name" class="font-semibold text-white text-right max-w-[60%] truncate"></span>
-                            </div>
-                            <div class="flex justify-between pt-1">
-                                <span class="text-gray-400">Rarity</span>
-                                <span id="res-rarity" class="font-semibold text-white text-right"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tombol Aksi -->
-                    <div class="flex w-full space-x-3">
-                        <button id="btn-save-collection" class="flex-1 bg-yellow-500 hover:bg-yellow-400 active:scale-95 text-slate-900 font-bold py-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-lg shadow-yellow-500/20">
-                            <i data-feather="save" class="w-5 h-5"></i>
-                            <span id="save-text">Simpan</span>
-                        </button>
-                        <button id="btn-scan-again" class="flex-1 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white font-bold py-4 rounded-xl flex items-center justify-center transition">
-                            Ulangi
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Gagal Scan UI -->
-                <div id="result-failed" class="text-center py-12 hide">
-                    <i data-feather="alert-triangle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i>
-                    <h3 class="text-2xl font-bold text-white mb-2">Bukan Kartu TCG</h3>
-                    <p class="text-gray-400 mb-8" id="failed-reason">Gambar tidak terdeteksi sebagai kartu Pokémon, Trainer, atau Energy.</p>
-                    <button id="btn-failed-back" class="px-8 py-3 bg-slate-700 text-white rounded-xl font-bold active:scale-95 transition">Kembali Scan</button>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <canvas id="capture-canvas" class="hidden"></canvas>
-
-    <!-- FIREBASE & LOGIC SCRIPT -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const apiKey = ""; // Kunci API Gemini
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pokemon-scanner-app';
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let currentUser = null;
-        let mediaStream = null;
-        let currentScanResult = null;
-        let currentDigitalCard = null;
-        let unsubscribeFirestore = null;
-
-        // Inisialisasi Elemen
-        const els = {
-            tabScanner: document.getElementById('tab-scanner'),
-            tabCollection: document.getElementById('tab-collection'),
-            viewScanner: document.getElementById('view-scanner'),
-            viewCollection: document.getElementById('view-collection'),
-            video: document.getElementById('camera-video'),
-            cameraError: document.getElementById('camera-error'),
-            errorMessage: document.getElementById('error-message'),
-            scannerOverlay: document.getElementById('scanner-overlay'),
-            scannerControls: document.getElementById('scanner-controls'),
-            btnCapture: document.getElementById('btn-capture'),
-            btnUpload: document.getElementById('btn-upload'),
-            btnUploadFallback: document.getElementById('btn-upload-fallback'),
-            fileInput: document.getElementById('file-input'),
-            canvas: document.getElementById('capture-canvas'),
-            imagePreviewContainer: document.getElementById('image-preview-container'),
-            imagePreview: document.getElementById('image-preview'),
-            loadingOverlay: document.getElementById('loading-overlay'),
-            modalResult: document.getElementById('modal-result'),
-            btnCloseModal: document.getElementById('btn-close-modal'),
-            resultSuccess: document.getElementById('result-success'),
-            resultFailed: document.getElementById('result-failed'),
-            btnSaveCollection: document.getElementById('btn-save-collection'),
-            btnScanAgain: document.getElementById('btn-scan-again'),
-            btnFailedBack: document.getElementById('btn-failed-back'),
-            saveText: document.getElementById('save-text'),
-            collectionEmpty: document.getElementById('collection-empty'),
-            collectionGrid: document.getElementById('collection-grid'),
-            btnStartScan: document.getElementById('btn-start-scan'),
-            
-            imgDigitalCard: document.getElementById('digital-card-img'),
-            fallbackDigitalCard: document.getElementById('digital-card-fallback'),
-            resCardName: document.getElementById('res-card-name'),
-            resCardNumber: document.getElementById('res-card-number'),
-            resBadge: document.getElementById('res-badge'),
-            resBadgeText: document.getElementById('res-badge-text'),
-            resDigitalInfo: document.getElementById('res-digital-info'),
-            resSetName: document.getElementById('res-set-name'),
-            resRarity: document.getElementById('res-rarity')
-        };
-
-        feather.replace();
-
-        // 1. Auth Firebase
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth error:", err);
-            }
-        };
-        initAuth();
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) loadCollection();
-        });
-
-        // 2. Kamera Logika (Diperbaiki untuk Mobile)
-        const startCamera = async () => {
-            els.cameraError.classList.add('hide');
-            els.scannerOverlay.classList.remove('hide');
-            els.scannerControls.classList.remove('hide');
-
-            try {
-                if (mediaStream) {
-                    mediaStream.getTracks().forEach(track => track.stop());
-                }
-                // Paksa menggunakan kamera belakang jika tersedia
-                mediaStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: { ideal: "environment" } },
-                    audio: false
-                });
-                
-                els.video.srcObject = mediaStream;
-                // Sangat penting untuk browser mobile: panggil play()
-                await els.video.play();
-
-            } catch (err) {
-                console.warn("Kamera gagal:", err);
-                els.cameraError.classList.remove('hide');
-                els.scannerOverlay.classList.add('hide');
-                els.scannerControls.classList.add('hide');
-                
-                if (err.name === 'NotAllowedError') {
-                    els.errorMessage.textContent = "Akses kamera ditolak browser. Mohon izinkan kamera.";
-                } else {
-                    els.errorMessage.textContent = "Kamera tidak terdeteksi atau Anda sedang offline (file://).";
-                }
-            }
-        };
-
-        const stopCamera = () => {
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(track => track.stop());
-                mediaStream = null;
-            }
-        };
-
-        // 3. UI Navigation
-        const switchTab = (tabName) => {
-            if (tabName === 'scanner') {
-                els.tabScanner.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-slate-900 text-yellow-400";
-                els.tabCollection.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-white flex items-center space-x-1";
-                els.viewScanner.classList.remove('hide');
-                els.viewCollection.classList.add('hide');
-                resetScannerUI();
-                startCamera();
+            // Set Image
+            if(card.image) {
+                els.resImg.src = card.image;
+                els.resImg.classList.remove('hidden');
+                els.resNoImg.classList.add('hidden');
             } else {
-                els.tabCollection.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-slate-900 text-yellow-400 flex items-center space-x-1";
-                els.tabScanner.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-white";
-                els.viewScanner.classList.add('hide');
-                els.viewCollection.classList.remove('hide');
-                stopCamera();
+                els.resImg.classList.add('hidden');
+                els.resNoImg.classList.remove('hidden');
             }
-            feather.replace();
-        };
+        }
 
-        els.tabScanner.addEventListener('click', () => switchTab('scanner'));
-        els.tabCollection.addEventListener('click', () => switchTab('collection'));
-        els.btnStartScan.addEventListener('click', () => switchTab('scanner'));
-
-        // 4. API TCG & Gemini AI
-        const fetchDigitalCardInfo = async (cardName, cardNumberStr, supertype) => {
-            try {
-                let cleanNumber = "";
-                if (cardNumberStr) {
-                    cleanNumber = cardNumberStr.split('/')[0].replace(/^0+/, ''); 
-                }
-
-                const safeQueryName = cardName.replace(/"/g, '\\"');
-                const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${safeQueryName}"`);
-                const data = await response.json();
-                
-                if (data.data && data.data.length > 0) {
-                    let matchedCards = data.data;
-                    if (supertype) {
-                        matchedCards = matchedCards.filter(c => c.supertype && c.supertype.toUpperCase() === supertype.toUpperCase());
-                    }
-
-                    let matchedCard = null;
-                    if (cleanNumber && matchedCards.length > 0) {
-                        matchedCard = matchedCards.find(c => c.number === cleanNumber || c.number === cardNumberStr.split('/')[0]);
-                    }
-                    if (!matchedCard && matchedCards.length > 0) matchedCard = matchedCards[0];
-                    if (!matchedCard && data.data.length > 0) matchedCard = data.data[0];
-
-                    if (matchedCard) {
-                        return {
-                            imageUrl: matchedCard.images.large || matchedCard.images.small,
-                            tcgUrl: matchedCard.tcgplayer?.url || "#",
-                            rarity: matchedCard.rarity || "Unknown",
-                            setName: matchedCard.set?.name || "Unknown Set",
-                            supertype: matchedCard.supertype
-                        };
-                    }
-                }
-                return null;
-            } catch (err) {
-                console.error("Gagal ambil TCG:", err);
-                return null;
-            }
-        };
-
-        const analyzeImage = async (base64Data) => {
-            els.loadingOverlay.classList.remove('hide');
-            els.scannerControls.classList.add('hide');
-
-            const promptText = `Analisis kartu ini. 
-            1. isPokemonTCGCard: boolean
-            2. cardName: nama karakter pokemon, nama trainer card (misal Boss's Orders), atau tipe energi.
-            3. supertype: POKEMON, TRAINER, atau ENERGY
-            4. hp: angka HP (kosongkan jika Trainer/Energy)
-            5. cardNumber: nomor seri kartu di bawah (contoh: 12/100). Kosongkan jika tidak ada.`;
-
-            const schema = {
-                type: "OBJECT",
-                properties: {
-                    isPokemonTCGCard: { type: "BOOLEAN" },
-                    cardName: { type: "STRING" },
-                    supertype: { type: "STRING" },
-                    hp: { type: "STRING" },
-                    cardNumber: { type: "STRING" }
-                },
-                required: ["isPokemonTCGCard"]
-            };
-
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: promptText }, { inlineData: { mimeType: "image/jpeg", data: base64Data } }] }],
-                generationConfig: { responseMimeType: "application/json", responseSchema: schema }
-            };
-
-            let retries = 3;
-            while(retries > 0) {
-                try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) throw new Error("API Limit / Error");
-                    const data = await response.json();
-                    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    
-                    if (responseText) {
-                        currentScanResult = JSON.parse(responseText);
-                        if (currentScanResult.isPokemonTCGCard && currentScanResult.cardName) {
-                            currentDigitalCard = await fetchDigitalCardInfo(currentScanResult.cardName, currentScanResult.cardNumber, currentScanResult.supertype);
-                        }
-                        showResultModal();
-                        return; 
-                    }
-                } catch (err) {
-                    retries--;
-                    if(retries === 0) {
-                        alert("Gagal koneksi ke AI AI. Pastikan internet Anda jalan.");
-                        resetScannerUI();
-                        startCamera();
-                    }
-                    await new Promise(r => setTimeout(r, 1500));
-                }
-            }
-        };
-
-        const captureAndProcess = () => {
-            const canvas = els.canvas;
-            const video = els.video;
-            
-            // Cek apakah video ready
-            if (video.videoWidth === 0) return;
-
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            els.imagePreview.src = imageDataUrl;
-            els.imagePreviewContainer.classList.remove('hide');
-            els.scannerOverlay.classList.add('hide');
-            stopCamera();
-            
-            analyzeImage(imageDataUrl.split(',')[1]);
-        };
-
-        const handleFileUpload = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                els.imagePreview.src = event.target.result;
-                els.imagePreviewContainer.classList.remove('hide');
-                els.scannerOverlay.classList.add('hide');
-                els.cameraError.classList.add('hide');
-                stopCamera();
-                analyzeImage(event.target.result.split(',')[1]);
-            };
-            reader.readAsDataURL(file);
-        };
-
-        els.btnCapture.addEventListener('click', captureAndProcess);
-        els.btnUpload.addEventListener('click', () => els.fileInput.click());
-        els.btnUploadFallback.addEventListener('click', () => els.fileInput.click());
-        els.fileInput.addEventListener('change', handleFileUpload);
-
-        // 5. Result Modal UI
-        const showResultModal = () => {
-            els.loadingOverlay.classList.add('hide');
-            els.modalResult.classList.remove('hide');
-
-            if (currentScanResult && currentScanResult.isPokemonTCGCard) {
-                els.resultSuccess.classList.remove('hide');
-                els.resultFailed.classList.add('hide');
-
-                els.resCardName.textContent = currentScanResult.cardName || 'Unknown Card';
-                els.resCardNumber.textContent = currentScanResult.cardNumber || 'No Card Number';
-
-                let sType = (currentScanResult.supertype || "").toUpperCase();
-                els.resBadge.className = "px-3 py-1.5 rounded-lg border flex-shrink-0 text-center min-w-[70px]"; 
-                
-                if (sType === 'TRAINER') {
-                    els.resBadge.classList.add("bg-blue-900/50", "border-blue-500", "text-blue-400");
-                    els.resBadgeText.textContent = "TRAINER";
-                } else if (sType === 'ENERGY') {
-                    els.resBadge.classList.add("bg-green-900/50", "border-green-500", "text-green-400");
-                    els.resBadgeText.textContent = "ENERGY";
-                } else {
-                    els.resBadge.classList.add("bg-red-900/50", "border-red-500", "text-red-500");
-                    els.resBadgeText.textContent = currentScanResult.hp ? `HP ${currentScanResult.hp}` : "PKMN";
-                }
-
-                if (currentDigitalCard) {
-                    els.imgDigitalCard.src = currentDigitalCard.imageUrl;
-                    els.imgDigitalCard.classList.remove('hide');
-                    els.fallbackDigitalCard.classList.add('hide');
-                    els.resDigitalInfo.classList.remove('hide');
-                    els.resSetName.textContent = currentDigitalCard.setName;
-                    els.resRarity.textContent = currentDigitalCard.rarity;
-                } else {
-                    els.imgDigitalCard.classList.add('hide');
-                    els.fallbackDigitalCard.classList.remove('hide');
-                    els.resDigitalInfo.classList.add('hide');
-                }
-            } else {
-                els.resultSuccess.classList.add('hide');
-                els.resultFailed.classList.remove('hide');
-            }
-            feather.replace();
-        };
-
-        const resetScannerUI = () => {
-            currentScanResult = null;
-            currentDigitalCard = null;
-            els.fileInput.value = ''; // reset file input
-            els.modalResult.classList.add('hide');
-            els.loadingOverlay.classList.add('hide');
-            els.imagePreviewContainer.classList.add('hide');
-            els.imagePreview.src = '';
-            els.scannerOverlay.classList.remove('hide');
-            els.scannerControls.classList.remove('hide');
-            els.btnSaveCollection.disabled = false;
-            els.saveText.textContent = "Simpan";
-        };
-
-        const closeAndRestartScanner = () => {
-            resetScannerUI();
+        function closeResult() {
+            els.modalRes.classList.add('hidden');
+            els.fileUpload.value = '';
+            pendingCardData = null;
             startCamera();
-        };
+        }
 
-        els.btnCloseModal.addEventListener('click', closeAndRestartScanner);
-        els.btnScanAgain.addEventListener('click', closeAndRestartScanner);
-        els.btnFailedBack.addEventListener('click', closeAndRestartScanner);
+        els.btnCloseRes.addEventListener('click', closeResult);
+        els.btnRescan.addEventListener('click', closeResult);
 
-        // 6. Firestore
-        els.btnSaveCollection.addEventListener('click', async () => {
-            if (!currentUser || !currentScanResult) return;
-            els.btnSaveCollection.disabled = true;
-            els.saveText.textContent = "Menyimpan...";
-
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'pokemon_cards'), {
-                    name: currentScanResult.cardName,
-                    supertype: currentScanResult.supertype || 'Pokemon',
-                    hp: currentScanResult.hp || '',
-                    cardNumber: currentScanResult.cardNumber || '',
-                    imageUrl: currentDigitalCard ? currentDigitalCard.imageUrl : null,
-                    setName: currentDigitalCard ? currentDigitalCard.setName : 'Unknown Set',
-                    rarity: currentDigitalCard ? currentDigitalCard.rarity : 'Unknown',
-                    timestamp: Date.now()
-                });
+        // --- 6. COLLECTION MANAGEMENT (LOCAL STORAGE) ---
+        els.btnSaveCard.addEventListener('click', () => {
+            if(pendingCardData) {
+                collection.push(pendingCardData);
+                localStorage.setItem('poke_collection', JSON.stringify(collection));
+                els.modalRes.classList.add('hidden');
                 switchTab('collection');
-            } catch (err) {
-                alert("Gagal menyimpan kartu.");
-                els.btnSaveCollection.disabled = false;
-                els.saveText.textContent = "Simpan";
             }
         });
 
-        const loadCollection = () => {
-            if (!currentUser) return;
-            if (unsubscribeFirestore) unsubscribeFirestore();
-
-            unsubscribeFirestore = onSnapshot(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'pokemon_cards'), 
-            (snapshot) => {
-                const cards = [];
-                snapshot.forEach(doc => cards.push({ id: doc.id, ...doc.data() }));
-                cards.sort((a, b) => b.timestamp - a.timestamp);
-                renderCollection(cards);
-            }, (error) => console.error(error));
-        };
-
-        const renderCollection = (cards) => {
-            els.collectionGrid.innerHTML = '';
-            if (cards.length === 0) {
-                els.collectionEmpty.classList.remove('hide');
-                els.collectionGrid.classList.add('hide');
+        function renderCollection() {
+            els.grid.innerHTML = '';
+            if (collection.length === 0) {
+                els.emptyState.classList.remove('hidden');
+                els.grid.classList.add('hidden');
             } else {
-                els.collectionEmpty.classList.add('hide');
-                els.collectionGrid.classList.remove('hide');
+                els.emptyState.classList.add('hidden');
+                els.grid.classList.remove('hidden');
 
-                cards.forEach(card => {
-                    let badgeColor = "text-red-400";
+                // Sort by newest
+                const sorted = [...collection].sort((a,b) => b.timestamp - a.timestamp);
+
+                sorted.forEach(card => {
+                    let badgeClass = "text-red-400";
                     let badgeText = card.hp ? `HP ${card.hp}` : "PKMN";
-                    let sType = (card.supertype || "").toUpperCase();
                     
-                    if (sType === 'TRAINER') { badgeColor = "text-blue-400"; badgeText = "TRAINER"; } 
-                    else if (sType === 'ENERGY') { badgeColor = "text-green-400"; badgeText = "ENERGY"; }
+                    if (card.type === 'TRAINER') { badgeClass = "text-blue-400"; badgeText = "TRAINER"; } 
+                    else if (card.type === 'ENERGY') { badgeClass = "text-green-400"; badgeText = "ENERGY"; }
 
-                    const cardEl = document.createElement('div');
-                    cardEl.className = "bg-slate-800 rounded-xl overflow-hidden shadow-lg border border-slate-700 group relative";
-                    cardEl.innerHTML = `
-                        <div class="aspect-[2.5/3.5] bg-slate-900 relative">
-                            ${card.imageUrl ? 
-                                `<img src="${card.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />` 
-                                : `<div class="w-full h-full flex flex-col justify-center items-center p-2 text-center text-xs text-gray-500">${card.name}</div>`
+                    const div = document.createElement('div');
+                    div.className = "bg-slate-800 rounded-xl overflow-hidden shadow border border-slate-700 relative";
+                    div.innerHTML = `
+                        <div class="aspect-[2.5/3.5] bg-slate-900">
+                            ${card.image ? 
+                                `<img src="${card.image}" class="w-full h-full object-cover">` : 
+                                `<div class="w-full h-full flex items-center justify-center text-xs text-gray-500">${card.name}</div>`
                             }
-                            <button data-id="${card.id}" class="btn-delete absolute top-2 right-2 p-2 bg-red-600/90 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                <i data-feather="trash-2" class="w-4 h-4"></i>
-                            </button>
                         </div>
-                        <div class="p-3">
+                        <div class="p-2">
                             <h3 class="font-bold text-white text-xs truncate">${card.name}</h3>
-                            <div class="flex justify-between items-center mt-1">
-                                <span class="text-[10px] text-gray-400 truncate w-1/2">${card.setName}</span>
-                                <span class="text-[10px] font-bold ${badgeColor}">${badgeText}</span>
+                            <div class="flex justify-between mt-1 text-[10px]">
+                                <span class="text-gray-400 truncate w-1/2">${card.set}</span>
+                                <span class="${badgeClass} font-bold">${badgeText}</span>
                             </div>
                         </div>
+                        <button onclick="deleteCard('${card.id}')" class="absolute top-1 right-1 p-1.5 bg-red-600 rounded-full text-white">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i>
+                        </button>
                     `;
-                    els.collectionGrid.appendChild(cardEl);
+                    els.grid.appendChild(div);
                 });
+                lucide.createIcons();
+            }
+        }
 
-                document.querySelectorAll('.btn-delete').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'pokemon_cards', e.currentTarget.getAttribute('data-id')));
-                    });
-                });
-                feather.replace();
+        // Ekspose delete function ke global agar onclick html berfungsi
+        window.deleteCard = function(id) {
+            if(confirm("Hapus kartu ini?")) {
+                collection = collection.filter(c => c.id !== id);
+                localStorage.setItem('poke_collection', JSON.stringify(collection));
+                renderCollection();
             }
         };
 
-        // Mulai aplikasi
-        switchTab('scanner');
+        // Init App
+        startCamera();
 
     </script>
 </body>
