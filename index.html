@@ -1273,6 +1273,44 @@
 
         // --- MAIN LOCAL OCR PIPELINE ---
 
+        // --- NATIVE & CLOUD OCR HYBRID ENGINES ---
+        async function scanWithNativeDetector(canvas) {
+            if (typeof window.TextDetector === 'undefined') return null;
+            try {
+                const detector = new window.TextDetector();
+                const results = await detector.detect(canvas);
+                return results;
+            } catch (e) {
+                console.warn("Native TextDetector failed:", e);
+                return null;
+            }
+        }
+
+        async function scanWithOCRSpace(base64Image) {
+            try {
+                const formData = new FormData();
+                formData.append('base64Image', base64Image);
+                formData.append('language', 'eng');
+                formData.append('apikey', 'helloworld'); // OCR.space public free testing key
+                formData.append('isOverlayRequired', 'false');
+                formData.append('scale', 'true'); // Auto upscale for maximum accuracy
+
+                const res = await fetch('https://api.ocr.space/parse/image', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!res.ok) throw new Error("OCR.space request failed");
+                const json = await res.json();
+                if (json.IsErroredOnProcessing) throw new Error(json.ErrorMessage);
+                
+                return json.ParsedResults?.[0]?.ParsedText || '';
+            } catch (err) {
+                console.warn("OCR.space failed:", err);
+                return null;
+            }
+        }
+
+        // --- MAIN LOCAL OCR PIPELINE ---
         async function processWithLocalOCR() {
             els.loading.classList.remove('hidden');
             els.ocrDiagnostics.classList.remove('hidden');
@@ -1285,220 +1323,224 @@
             els.ocrStatusFooter.className = "text-blue-400 font-mono";
             els.ocrResultHeader.textContent = "-";
             els.ocrResultFooter.textContent = "-";
-            els.loadingText.textContent = "Menyiapkan Scanner Lokal v2...";
+            els.loadingText.textContent = "Menghubungkan Scanner...";
 
-            const worker = await initTesseract();
-            if (!worker) {
-                alert("Gagal memuat Scanner Lokal. Silakan gunakan Gemini AI atau coba lagi.");
-                els.loading.classList.add('hidden');
-                els.ocrDiagnostics.classList.add('hidden');
-                els.loadingSpinner.classList.remove('hidden');
-                startCamera();
-                return;
-            }
+            let cleanedName = "";
+            let ocrNumObj = null;
+            let scannerEngine = "None";
 
             try {
-                const W = els.canvas.width;
-                const H = els.canvas.height;
+                // === STEP 1: Try Native Web Text Detector (100% Device/GPU Accelerated, extremely high accuracy on Android Chrome) ===
+                els.loadingText.textContent = "Membaca teks (Native Engine)...";
+                const nativeResults = await scanWithNativeDetector(els.canvas);
+                
+                if (nativeResults && nativeResults.length > 0) {
+                    console.log("Native OCR Results:", nativeResults);
+                    const H = els.canvas.height;
+                    const W = els.canvas.width;
+                    let rawNameText = "";
+                    let rawNumberText = "";
 
-                // Use FULL canvas as the card region (user already framed the card in the box)
-                // No need to guess card position — the card IS the image
-                const cardX = 0;
-                const cardY = 0;
-                const cardW = W;
-                const cardH = H;
-
-                // --- CROP REGIONS (Pokémon TCG standard layout) ---
-                // Name: top-left region (0-20% height, 85% width) to capture names on both Pokémon and Trainer layouts
-                const hX = cardX;
-                const hY = cardY;
-                const hW = Math.round(cardW * 0.85);
-                const hH = Math.round(cardH * 0.20);
-
-                // Footer Left: bottom-left corner (0-40% width, 91-100% height) for modern card numbers
-                const flX = cardX;
-                const flY = Math.round(cardY + cardH * 0.91);
-                const flW = Math.round(cardW * 0.40);
-                const flH = cardH - flY;
-
-                // Footer Right: bottom-right corner (70-100% width, 91-100% height) for classic card numbers
-                const frX = Math.round(cardX + cardW * 0.70);
-                const frY = Math.round(cardY + cardH * 0.91);
-                const frW = cardW - frX;
-                const frH = cardH - frY;
-
-                // === PASS 1: Multi-strategy OCR on Header (Name) ===
-                els.loadingText.textContent = "Membaca nama kartu (multi-pass)...";
-                els.ocrStatusHeader.textContent = "Multi-pass...";
-                els.ocrStatusHeader.className = "text-yellow-400 font-mono animate-pulse";
-
-                const headerResult = await multiPassOCR(
-                    worker, 
-                    els.canvas, 
-                    hX, hY, hW, hH, 
-                    7, 
-                    els.canvasCropHeader,
-                    "" // Let Tesseract use its full dictionary & spelling corrector to perfectly parse accents and names!
-                );
-                els.ocrResultHeader.textContent = headerResult.text || "(tidak terbaca)";
-                els.ocrStatusHeader.textContent = `✓ ${headerResult.confidence}%`;
-                els.ocrStatusHeader.className = "text-green-400 font-mono";
-
-                // === PASS 2: Multi-strategy OCR on Footer (Number) ===
-                els.loadingText.textContent = "Membaca nomor kartu (multi-pass)...";
-                els.ocrStatusFooter.textContent = "Multi-pass...";
-                els.ocrStatusFooter.className = "text-yellow-400 font-mono animate-pulse";
-
-                let bestFooterText = '';
-                let bestFooterConf = 0;
-                let selectedFooterSide = 'none';
-
-                // Try STRICT DIGIT PASS (0-9 and slashes) first on left and right - highly immune to letter/copyright noise!
-                const leftStrictResult = await multiPassOCR(worker, els.canvas, flX, flY, flW, flH, 7, null, "0123456789/");
-                const leftStrictCleaned = cleanOCRNumber(leftStrictResult.text);
-
-                if (leftStrictCleaned && leftStrictResult.confidence >= 40) {
-                    bestFooterText = leftStrictResult.text;
-                    bestFooterConf = leftStrictResult.confidence;
-                    selectedFooterSide = 'left (strict)';
-                    
-                    // Draw to diagnostics
-                    const baseCanvas = cropUpscalePad(els.canvas, flX, flY, flW, flH);
-                    grayscaleCanvas(baseCanvas);
-                    adaptiveBinarize(baseCanvas, 0.125, 15);
-                    els.canvasCropFooter.width = baseCanvas.width;
-                    els.canvasCropFooter.height = baseCanvas.height;
-                    els.canvasCropFooter.getContext('2d').drawImage(baseCanvas, 0, 0);
-                } else {
-                    const rightStrictResult = await multiPassOCR(worker, els.canvas, frX, frY, frW, frH, 7, null, "0123456789/");
-                    const rightStrictCleaned = cleanOCRNumber(rightStrictResult.text);
-                    
-                    if (rightStrictCleaned && rightStrictResult.confidence >= 40) {
-                        bestFooterText = rightStrictResult.text;
-                        bestFooterConf = rightStrictResult.confidence;
-                        selectedFooterSide = 'right (strict)';
+                    nativeResults.forEach(block => {
+                        const text = block.rawValue.trim();
+                        const box = block.boundingBox;
                         
-                        // Draw to diagnostics
-                        const baseCanvas = cropUpscalePad(els.canvas, frX, frY, frW, frH);
-                        grayscaleCanvas(baseCanvas);
-                        adaptiveBinarize(baseCanvas, 0.125, 15);
-                        els.canvasCropFooter.width = baseCanvas.width;
-                        els.canvasCropFooter.height = baseCanvas.height;
-                        els.canvasCropFooter.getContext('2d').drawImage(baseCanvas, 0, 0);
+                        // Top 20% of card = Name / Header
+                        if (box.y < H * 0.20) rawNameText += " " + text;
+                        // Bottom 9% of card = Number / Footer
+                        if (box.y > H * 0.91) rawNumberText += " " + text;
+                    });
+
+                    cleanedName = cleanOCRName(rawNameText);
+                    ocrNumObj = cleanOCRNumber(rawNumberText);
+                    
+                    if (cleanedName || ocrNumObj) {
+                        scannerEngine = "Native (On-Device)";
+                        
+                        els.ocrResultHeader.textContent = cleanedName || "(tidak terbaca)";
+                        els.ocrStatusHeader.textContent = "✓ Native OCR";
+                        els.ocrStatusHeader.className = "text-green-400 font-mono";
+                        els.ocrResultFooter.textContent = ocrNumObj ? ocrNumObj.full : "(tidak terbaca)";
+                        els.ocrStatusFooter.textContent = "✓ Native OCR";
+                        els.ocrStatusFooter.className = "text-green-400 font-mono";
                     }
                 }
 
-                // If strict pass failed, run flexible ALPHANUMERIC pass as fallback (for cards with letter prefixes like SV80)
-                if (!bestFooterText) {
-                    const leftAlphaResult = await multiPassOCR(worker, els.canvas, flX, flY, flW, flH, 7, els.canvasCropFooter, "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-                    const leftAlphaCleaned = cleanOCRNumber(leftAlphaResult.text);
-                    
-                    bestFooterText = leftAlphaResult.text;
-                    bestFooterConf = leftAlphaResult.confidence;
-                    selectedFooterSide = 'left (alpha)';
+                // === STEP 2: Fallback to OCR.space Cloud OCR API (100% Free, Zero-Config, Extremely High Professional Accuracy) ===
+                if (!cleanedName && !ocrNumObj) {
+                    els.loadingText.textContent = "Membaca teks (Cloud Engine)...";
+                    els.ocrStatusHeader.textContent = "Cloud OCR...";
+                    els.ocrStatusHeader.className = "text-yellow-400 font-mono animate-pulse";
+                    els.ocrStatusFooter.textContent = "Cloud OCR...";
+                    els.ocrStatusFooter.className = "text-yellow-400 font-mono animate-pulse";
 
-                    if (!leftAlphaCleaned || leftAlphaResult.confidence < 50) {
-                        const rightAlphaResult = await multiPassOCR(worker, els.canvas, frX, frY, frW, frH, 7, null, "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-                        const rightAlphaCleaned = cleanOCRNumber(rightAlphaResult.text);
+                    const base64Image = els.canvas.toDataURL('image/jpeg', 0.85);
+                    const cloudText = await scanWithOCRSpace(base64Image);
+                    
+                    if (cloudText) {
+                        console.log("Cloud OCR Text:", cloudText);
+                        cleanedName = extractNameFromFullText(cloudText);
+                        ocrNumObj = extractNumberFromFullText(cloudText);
                         
-                        if (rightAlphaCleaned && (!leftAlphaCleaned || rightAlphaResult.confidence > leftAlphaResult.confidence)) {
-                            bestFooterText = rightAlphaResult.text;
-                            bestFooterConf = rightAlphaResult.confidence;
-                            selectedFooterSide = 'right (alpha)';
+                        scannerEngine = "Cloud OCR (Free)";
+                        
+                        els.ocrResultHeader.textContent = cleanedName || "(tidak terbaca)";
+                        els.ocrStatusHeader.textContent = "✓ Cloud OCR";
+                        els.ocrStatusHeader.className = "text-green-400 font-mono";
+                        els.ocrResultFooter.textContent = ocrNumObj ? ocrNumObj.full : "(tidak terbaca)";
+                        els.ocrStatusFooter.textContent = "✓ Cloud OCR";
+                        els.ocrStatusFooter.className = "text-green-400 font-mono";
+                    }
+                }
+
+                // === STEP 3: Last Resort Fallback to Tesseract.js (On-Device Local) ===
+                if (!cleanedName && !ocrNumObj) {
+                    els.loadingText.textContent = "Membaca teks (Tesseract.js)...";
+                    els.ocrStatusHeader.textContent = "Tesseract...";
+                    els.ocrStatusHeader.className = "text-yellow-400 font-mono animate-pulse";
+                    els.ocrStatusFooter.textContent = "Tesseract...";
+                    els.ocrStatusFooter.className = "text-yellow-400 font-mono animate-pulse";
+
+                    const worker = await initTesseract();
+                    if (worker) {
+                        const W = els.canvas.width;
+                        const H = els.canvas.height;
+                        
+                        const hX = 0; const hY = 0; const hW = Math.round(W * 0.85); const hH = Math.round(H * 0.20);
+                        const flX = 0; const flY = Math.round(H * 0.91); const flW = Math.round(W * 0.40); const flH = H - flY;
+                        const frX = Math.round(W * 0.70); const frY = Math.round(H * 0.91); const frW = W - frX; const frH = H - frY;
+
+                        const headerResult = await multiPassOCR(worker, els.canvas, hX, hY, hW, hH, 7, els.canvasCropHeader, "");
+                        
+                        let bestFooterText = '';
+                        let bestFooterConf = 0;
+                        let selectedFooterSide = 'none';
+
+                        const leftStrictResult = await multiPassOCR(worker, els.canvas, flX, flY, flW, flH, 7, null, "0123456789/");
+                        const leftStrictCleaned = cleanOCRNumber(leftStrictResult.text);
+
+                        if (leftStrictCleaned && leftStrictResult.confidence >= 40) {
+                            bestFooterText = leftStrictResult.text;
+                            bestFooterConf = leftStrictResult.confidence;
+                            selectedFooterSide = 'left (strict)';
                             
-                            // Redraw winning right canvas to diagnostics
-                            const baseCanvas = cropUpscalePad(els.canvas, frX, frY, frW, frH);
+                            const baseCanvas = cropUpscalePad(els.canvas, flX, flY, flW, flH);
                             grayscaleCanvas(baseCanvas);
                             adaptiveBinarize(baseCanvas, 0.125, 15);
                             els.canvasCropFooter.width = baseCanvas.width;
                             els.canvasCropFooter.height = baseCanvas.height;
                             els.canvasCropFooter.getContext('2d').drawImage(baseCanvas, 0, 0);
+                        } else {
+                            const rightStrictResult = await multiPassOCR(worker, els.canvas, frX, frY, frW, frH, 7, null, "0123456789/");
+                            const rightStrictCleaned = cleanOCRNumber(rightStrictResult.text);
+                            
+                            if (rightStrictCleaned && rightStrictResult.confidence >= 40) {
+                                bestFooterText = rightStrictResult.text;
+                                bestFooterConf = rightStrictResult.confidence;
+                                selectedFooterSide = 'right (strict)';
+                                
+                                const baseCanvas = cropUpscalePad(els.canvas, frX, frY, frW, frH);
+                                grayscaleCanvas(baseCanvas);
+                                adaptiveBinarize(baseCanvas, 0.125, 15);
+                                els.canvasCropFooter.width = baseCanvas.width;
+                                els.canvasCropFooter.height = baseCanvas.height;
+                                els.canvasCropFooter.getContext('2d').drawImage(baseCanvas, 0, 0);
+                            }
                         }
+
+                        if (!bestFooterText) {
+                            const leftAlphaResult = await multiPassOCR(worker, els.canvas, flX, flY, flW, flH, 7, els.canvasCropFooter, "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+                            const leftAlphaCleaned = cleanOCRNumber(leftAlphaResult.text);
+                            bestFooterText = leftAlphaResult.text;
+                            bestFooterConf = leftAlphaResult.confidence;
+                            selectedFooterSide = 'left (alpha)';
+
+                            if (!leftAlphaCleaned || leftAlphaResult.confidence < 50) {
+                                const rightAlphaResult = await multiPassOCR(worker, els.canvas, frX, frY, frW, frH, 7, null, "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+                                const rightAlphaCleaned = cleanOCRNumber(rightAlphaResult.text);
+                                
+                                if (rightAlphaCleaned && (!leftAlphaCleaned || rightAlphaResult.confidence > leftAlphaResult.confidence)) {
+                                    bestFooterText = rightAlphaResult.text;
+                                    bestFooterConf = rightAlphaResult.confidence;
+                                    selectedFooterSide = 'right (alpha)';
+                                    
+                                    const baseCanvas = cropUpscalePad(els.canvas, frX, frY, frW, frH);
+                                    grayscaleCanvas(baseCanvas);
+                                    adaptiveBinarize(baseCanvas, 0.125, 15);
+                                    els.canvasCropFooter.width = baseCanvas.width;
+                                    els.canvasCropFooter.height = baseCanvas.height;
+                                    els.canvasCropFooter.getContext('2d').drawImage(baseCanvas, 0, 0);
+                                }
+                            }
+                        }
+
+                        cleanedName = cleanOCRName(headerResult.text);
+                        ocrNumObj = cleanOCRNumber(bestFooterText);
+                        scannerEngine = "Tesseract.js (" + selectedFooterSide + ")";
+
+                        els.ocrResultHeader.textContent = cleanedName || "(tidak terbaca)";
+                        els.ocrStatusHeader.textContent = `✓ ${headerResult.confidence}%`;
+                        els.ocrStatusHeader.className = "text-green-400 font-mono";
+                        els.ocrResultFooter.textContent = (bestFooterText || "(tidak terbaca)") + ` (${selectedFooterSide})`;
+                        els.ocrStatusFooter.textContent = `✓ ${bestFooterConf}%`;
+                        els.ocrStatusFooter.className = "text-green-400 font-mono";
                     }
                 }
 
-                els.ocrResultFooter.textContent = (bestFooterText || "(tidak terbaca)") + ` (${selectedFooterSide})`;
-                els.ocrStatusFooter.textContent = `✓ ${bestFooterConf}%`;
-                els.ocrStatusFooter.className = "text-green-400 font-mono";
+                console.log("=== Hybrid OCR Results ===");
+                console.log("Engine:", scannerEngine);
+                console.log("Cleaned Name:", cleanedName);
+                console.log("Cleaned Number:", ocrNumObj);
 
-                // Clean results
-                let cleanedName = cleanOCRName(headerResult.text);
-                let ocrNumObj = cleanOCRNumber(bestFooterText);
+                // === SEARCH DATABASE AND SHOW RESULT MODAL ===
+                if (cleanedName || ocrNumObj) {
+                    els.loadingText.textContent = "Mencari di database Pokémon...";
+                    const matchedCard = await searchTCGWithOCR(cleanedName, ocrNumObj);
 
-                console.log("=== OCR v2 Results ===");
-                console.log("Raw header:", headerResult.text, "conf:", headerResult.confidence);
-                console.log("Raw footer:", bestFooterText, "conf:", bestFooterConf, "side:", selectedFooterSide);
-                console.log("Cleaned name:", cleanedName);
-                console.log("Cleaned number:", ocrNumObj);
-
-                // === PASS 3: Full-card OCR fallback if header/footer were weak ===
-                if ((!cleanedName || cleanedName.length < 3) || headerResult.confidence < 40) {
-                    els.loadingText.textContent = "Pemindaian penuh kartu (fallback)...";
-                    console.log("Header OCR weak, running full-card fallback...");
-
-                    const fullText = await fullCardOCR(worker, els.canvas);
-                    console.log("Full card OCR text:", fullText);
-
-                    if (!cleanedName || cleanedName.length < 3) {
-                        cleanedName = extractNameFromFullText(fullText);
-                        els.ocrResultHeader.textContent += ` → ${cleanedName}`;
-                        console.log("Extracted name from full text:", cleanedName);
-                    }
-                    if (!ocrNumObj) {
-                        ocrNumObj = extractNumberFromFullText(fullText);
-                        if (ocrNumObj) els.ocrResultFooter.textContent += ` → ${ocrNumObj.full}`;
-                        console.log("Extracted number from full text:", ocrNumObj);
-                    }
-                }
-
-                // === SEARCH DATABASE ===
-                els.loadingText.textContent = "Mencari di database Pokémon...";
-                const matchedCard = await searchTCGWithOCR(cleanedName, ocrNumObj);
-
-                if (matchedCard) {
-                    pendingCardData = {
-                        id: 'card_' + Date.now(),
-                        name: matchedCard.name,
-                        type: (matchedCard.supertype || 'POKEMON').toUpperCase(),
-                        hp: matchedCard.hp || '',
-                        number: matchedCard.number || (ocrNumObj ? ocrNumObj.full : ''),
-                        image: matchedCard.images?.large || matchedCard.images?.small,
-                        set: matchedCard.set?.name || 'Unknown Set',
-                        timestamp: Date.now()
-                    };
-                    showResultModal(pendingCardData);
-                } else {
-                    // Last resort: try just the name with the original fetchTCGData
-                    if (cleanedName && cleanedName.length > 2) {
-                        els.loadingText.textContent = "Pencarian fallback terakhir...";
-                        const tcgFallback = await fetchTCGData(cleanedName, ocrNumObj ? ocrNumObj.full : null);
-
+                    if (matchedCard) {
                         pendingCardData = {
                             id: 'card_' + Date.now(),
-                            name: cleanedName,
-                            type: tcgFallback ? (tcgFallback.supertype || 'POKEMON').toUpperCase() : 'POKEMON',
-                            hp: '',
-                            number: ocrNumObj ? ocrNumObj.full : '',
-                            image: tcgFallback ? tcgFallback.image : null,
-                            set: tcgFallback ? tcgFallback.set : 'Lokal (OCR)',
+                            name: matchedCard.name,
+                            type: (matchedCard.supertype || 'POKEMON').toUpperCase(),
+                            hp: matchedCard.hp || '',
+                            number: matchedCard.number || (ocrNumObj ? ocrNumObj.full : ''),
+                            image: matchedCard.images?.large || matchedCard.images?.small,
+                            set: matchedCard.set?.name || 'Unknown Set',
                             timestamp: Date.now()
                         };
                         showResultModal(pendingCardData);
                     } else {
-                        // Pre-fill manual search with whatever OCR read to help the user
-                        elsSearch.inpName.value = cleanedName || '';
-                        elsSearch.inpNumber.value = ocrNumObj ? ocrNumObj.full : '';
-                        elsSearch.resultsContainer.classList.add('hidden');
-                        elsSearch.resultsList.innerHTML = '';
-                        
-                        elsSearch.modal.classList.remove('hidden');
-                        alert("Kamera kesulitan membaca kartu secara otomatis. Silakan periksa hasil OCR dan cari secara manual.");
-                        startCamera();
+                        // Fallback created card
+                        if (cleanedName && cleanedName.length > 2) {
+                            pendingCardData = {
+                                id: 'card_' + Date.now(),
+                                name: cleanedName,
+                                type: 'POKEMON',
+                                hp: '',
+                                number: ocrNumObj ? ocrNumObj.full : '',
+                                image: null,
+                                set: 'Lokal (' + scannerEngine + ')',
+                                timestamp: Date.now()
+                            };
+                            showResultModal(pendingCardData);
+                        } else {
+                            throw new Error("Teks tidak dikenali");
+                        }
                     }
+                } else {
+                    throw new Error("Pembacaan OCR gagal di seluruh mesin");
                 }
             } catch (err) {
-                console.error("Local OCR v2 pipeline failed:", err);
-                alert("Terjadi kesalahan: " + err.message);
+                console.error("Hybrid OCR pipeline failed:", err);
+                
+                // Pre-fill manual search with whatever OCR read to help the user
+                elsSearch.inpName.value = cleanedName || '';
+                elsSearch.inpNumber.value = ocrNumObj ? ocrNumObj.full : '';
+                elsSearch.resultsContainer.classList.add('hidden');
+                elsSearch.resultsList.innerHTML = '';
+                
+                elsSearch.modal.classList.remove('hidden');
+                alert("Kamera kesulitan membaca kartu secara otomatis. Silakan periksa hasil OCR dan cari secara manual.");
                 startCamera();
             } finally {
                 els.loading.classList.add('hidden');
