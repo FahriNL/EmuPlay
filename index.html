@@ -315,6 +315,17 @@
             canvasCropFooter: document.getElementById('canvas-crop-footer')
         };
 
+        const elsSearch = {
+            modal: document.getElementById('modal-manual-search'),
+            btnClose: document.getElementById('btn-close-manual-search'),
+            btnOpen: document.getElementById('btn-search-manual'),
+            inpName: document.getElementById('input-manual-name'),
+            inpNumber: document.getElementById('input-manual-number'),
+            btnSubmit: document.getElementById('btn-manual-search-submit'),
+            resultsContainer: document.getElementById('manual-search-results-container'),
+            resultsList: document.getElementById('manual-search-results-list')
+        };
+
         // --- 1. API KEY MANAGEMENT ---
         const getApiKey = () => localStorage.getItem('gemini_api_key');
         
@@ -634,7 +645,7 @@
             };
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -1099,9 +1110,9 @@
             if (!text) return "";
             let cleaned = text;
 
-            // Remove newlines, join into single line, take first meaningful line
+            // Preserve all lines to retain Trainer card sub-headers and names
             const lines = cleaned.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
-            if (lines.length > 0) cleaned = lines[0]; // Card name is always the first line
+            cleaned = lines.join(' ');
 
             cleaned = cleaned.toUpperCase();
 
@@ -1298,11 +1309,11 @@
                 const cardH = H;
 
                 // --- CROP REGIONS (Pokémon TCG standard layout) ---
-                // Name: top-left strip (0-9% height, 65% width) to isolate name and avoid HP / Energy symbols
+                // Name: top-left region (0-20% height, 85% width) to capture names on both Pokémon and Trainer layouts
                 const hX = cardX;
                 const hY = cardY;
-                const hW = Math.round(cardW * 0.65);
-                const hH = Math.round(cardH * 0.09);
+                const hW = Math.round(cardW * 0.85);
+                const hH = Math.round(cardH * 0.20);
 
                 // Footer Left: bottom-left corner (0-40% width, 91-100% height) for modern card numbers
                 const flX = cardX;
@@ -1327,7 +1338,7 @@
                     hX, hY, hW, hH, 
                     7, 
                     els.canvasCropHeader,
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-\' "
+                    "" // Let Tesseract use its full dictionary & spelling corrector to perfectly parse accents and names!
                 );
                 els.ocrResultHeader.textContent = headerResult.text || "(tidak terbaca)";
                 els.ocrStatusHeader.textContent = `✓ ${headerResult.confidence}%`;
@@ -1338,39 +1349,36 @@
                 els.ocrStatusFooter.textContent = "Multi-pass...";
                 els.ocrStatusFooter.className = "text-yellow-400 font-mono animate-pulse";
 
-                // Scan left footer first (modern cards)
-                const leftFooterResult = await multiPassOCR(
-                    worker, 
-                    els.canvas, 
-                    flX, flY, flW, flH, 
-                    7, 
-                    els.canvasCropFooter,
-                    "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                );
-                
-                let bestFooterText = leftFooterResult.text;
-                let bestFooterConf = leftFooterResult.confidence;
-                let selectedFooterSide = 'left';
+                let bestFooterText = '';
+                let bestFooterConf = 0;
+                let selectedFooterSide = 'none';
 
-                // Scan right footer if left footer was weak or didn't read a number
-                const leftCleaned = cleanOCRNumber(leftFooterResult.text);
-                if (!leftCleaned || leftFooterResult.confidence < 50) {
-                    const rightFooterResult = await multiPassOCR(
-                        worker, 
-                        els.canvas, 
-                        frX, frY, frW, frH, 
-                        7, 
-                        null, 
-                        "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                    );
+                // Try STRICT DIGIT PASS (0-9 and slashes) first on left and right - highly immune to letter/copyright noise!
+                const leftStrictResult = await multiPassOCR(worker, els.canvas, flX, flY, flW, flH, 7, null, "0123456789/");
+                const leftStrictCleaned = cleanOCRNumber(leftStrictResult.text);
+
+                if (leftStrictCleaned && leftStrictResult.confidence >= 40) {
+                    bestFooterText = leftStrictResult.text;
+                    bestFooterConf = leftStrictResult.confidence;
+                    selectedFooterSide = 'left (strict)';
                     
-                    const rightCleaned = cleanOCRNumber(rightFooterResult.text);
-                    if (rightCleaned && (!leftCleaned || rightFooterResult.confidence > leftFooterResult.confidence)) {
-                        bestFooterText = rightFooterResult.text;
-                        bestFooterConf = rightFooterResult.confidence;
-                        selectedFooterSide = 'right';
+                    // Draw to diagnostics
+                    const baseCanvas = cropUpscalePad(els.canvas, flX, flY, flW, flH);
+                    grayscaleCanvas(baseCanvas);
+                    adaptiveBinarize(baseCanvas, 0.125, 15);
+                    els.canvasCropFooter.width = baseCanvas.width;
+                    els.canvasCropFooter.height = baseCanvas.height;
+                    els.canvasCropFooter.getContext('2d').drawImage(baseCanvas, 0, 0);
+                } else {
+                    const rightStrictResult = await multiPassOCR(worker, els.canvas, frX, frY, frW, frH, 7, null, "0123456789/");
+                    const rightStrictCleaned = cleanOCRNumber(rightStrictResult.text);
+                    
+                    if (rightStrictCleaned && rightStrictResult.confidence >= 40) {
+                        bestFooterText = rightStrictResult.text;
+                        bestFooterConf = rightStrictResult.confidence;
+                        selectedFooterSide = 'right (strict)';
                         
-                        // Redraw winning right canvas to diagnostics
+                        // Draw to diagnostics
                         const baseCanvas = cropUpscalePad(els.canvas, frX, frY, frW, frH);
                         grayscaleCanvas(baseCanvas);
                         adaptiveBinarize(baseCanvas, 0.125, 15);
@@ -1380,7 +1388,36 @@
                     }
                 }
 
-                els.ocrResultFooter.textContent = (bestFooterText || "(tidak terbaca)") + ` (${selectedFooterSide === 'left' ? 'Kiri' : 'Kanan'})`;
+                // If strict pass failed, run flexible ALPHANUMERIC pass as fallback (for cards with letter prefixes like SV80)
+                if (!bestFooterText) {
+                    const leftAlphaResult = await multiPassOCR(worker, els.canvas, flX, flY, flW, flH, 7, els.canvasCropFooter, "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+                    const leftAlphaCleaned = cleanOCRNumber(leftAlphaResult.text);
+                    
+                    bestFooterText = leftAlphaResult.text;
+                    bestFooterConf = leftAlphaResult.confidence;
+                    selectedFooterSide = 'left (alpha)';
+
+                    if (!leftAlphaCleaned || leftAlphaResult.confidence < 50) {
+                        const rightAlphaResult = await multiPassOCR(worker, els.canvas, frX, frY, frW, frH, 7, null, "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+                        const rightAlphaCleaned = cleanOCRNumber(rightAlphaResult.text);
+                        
+                        if (rightAlphaCleaned && (!leftAlphaCleaned || rightAlphaResult.confidence > leftAlphaResult.confidence)) {
+                            bestFooterText = rightAlphaResult.text;
+                            bestFooterConf = rightAlphaResult.confidence;
+                            selectedFooterSide = 'right (alpha)';
+                            
+                            // Redraw winning right canvas to diagnostics
+                            const baseCanvas = cropUpscalePad(els.canvas, frX, frY, frW, frH);
+                            grayscaleCanvas(baseCanvas);
+                            adaptiveBinarize(baseCanvas, 0.125, 15);
+                            els.canvasCropFooter.width = baseCanvas.width;
+                            els.canvasCropFooter.height = baseCanvas.height;
+                            els.canvasCropFooter.getContext('2d').drawImage(baseCanvas, 0, 0);
+                        }
+                    }
+                }
+
+                els.ocrResultFooter.textContent = (bestFooterText || "(tidak terbaca)") + ` (${selectedFooterSide})`;
                 els.ocrStatusFooter.textContent = `✓ ${bestFooterConf}%`;
                 els.ocrStatusFooter.className = "text-green-400 font-mono";
 
@@ -1471,16 +1508,6 @@
         }
 
         // --- 8. MANUAL SEARCH ENGINE ---
-        const elsSearch = {
-            modal: document.getElementById('modal-manual-search'),
-            btnClose: document.getElementById('btn-close-manual-search'),
-            btnOpen: document.getElementById('btn-search-manual'),
-            inpName: document.getElementById('input-manual-name'),
-            inpNumber: document.getElementById('input-manual-number'),
-            btnSubmit: document.getElementById('btn-manual-search-submit'),
-            resultsContainer: document.getElementById('manual-search-results-container'),
-            resultsList: document.getElementById('manual-search-results-list')
-        };
 
         elsSearch.btnOpen.addEventListener('click', () => {
             elsSearch.inpName.value = '';
