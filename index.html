@@ -637,9 +637,11 @@
             }
         };
 
-        // ================= 7. LOCAL OCR AI SCANNER ENGINE =================
+        // ================= 7. LOCAL OCR AI SCANNER ENGINE (v2 - High Accuracy) =================
         let tesseractWorker = null;
         let isTesseractInitializing = false;
+        const UPSCALE_FACTOR = 3; // Upscale cropped regions 3x for Tesseract accuracy
+        const PADDING = 20; // White padding around text regions in pixels (after upscale)
 
         async function initTesseract() {
             if (tesseractWorker || isTesseractInitializing) return tesseractWorker;
@@ -647,7 +649,6 @@
             try {
                 tesseractWorker = await Tesseract.createWorker({
                     logger: m => {
-                        console.log("Tesseract Log:", m);
                         if (m.status === 'recognizing text') {
                             const pct = Math.round(m.progress * 100);
                             els.loadingText.textContent = `Membaca teks: ${pct}%...`;
@@ -656,203 +657,479 @@
                 });
                 await tesseractWorker.loadLanguage('eng');
                 await tesseractWorker.initialize('eng');
-                await tesseractWorker.setParameters({
-                    tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/ -',
-                });
-                console.log("Tesseract initialized successfully.");
+                console.log("Tesseract v2 initialized.");
             } catch (err) {
                 console.error("Failed to init Tesseract worker", err);
+                tesseractWorker = null;
             } finally {
                 isTesseractInitializing = false;
             }
             return tesseractWorker;
         }
 
-        // Grayscale + High-Contrast dynamic threshold filter to binarize cropped regions
-        function binarizeCanvas(canvas) {
+        // --- IMAGE PREPROCESSING UTILITIES ---
+
+        // Creates an upscaled, padded canvas from a source region
+        function cropUpscalePad(srcCanvas, sx, sy, sw, sh) {
+            const upW = Math.round(sw * UPSCALE_FACTOR);
+            const upH = Math.round(sh * UPSCALE_FACTOR);
+            const padW = upW + PADDING * 2;
+            const padH = upH + PADDING * 2;
+
+            const c = document.createElement('canvas');
+            c.width = padW;
+            c.height = padH;
+            const ctx = c.getContext('2d');
+
+            // Fill with white padding
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, padW, padH);
+
+            // Draw upscaled source region into center
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(srcCanvas, sx, sy, sw, sh, PADDING, PADDING, upW, upH);
+            return c;
+        }
+
+        // Converts canvas to grayscale in-place, returns array of luminance values
+        function grayscaleCanvas(canvas) {
             const ctx = canvas.getContext('2d');
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
-            
-            let totalLuminance = 0;
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i+1];
-                const b = data[i+2];
-                // Relative luminance formula
-                const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                data[i] = gray;
-                data[i+1] = gray;
-                data[i+2] = gray;
-                totalLuminance += gray;
+            const d = imgData.data;
+            const lum = new Float32Array(d.length / 4);
+            for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+                const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                d[i] = d[i + 1] = d[i + 2] = gray;
+                lum[j] = gray;
             }
-            
-            const avgLuminance = totalLuminance / (data.length / 4);
-            const threshold = avgLuminance * 0.88; // Slightly below average to make text bolder/clearer
-            
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = data[i];
-                const binary = gray < threshold ? 0 : 255;
-                data[i] = binary;
-                data[i+1] = binary;
-                data[i+2] = binary;
+            ctx.putImageData(imgData, 0, 0);
+            return lum;
+        }
+
+        // Adaptive binarization using local block mean (Wellner/Bradley style)
+        // Much better than global threshold for cards with gradient backgrounds
+        function adaptiveBinarize(canvas, blockRatio = 0.125, cOffset = 15) {
+            const ctx = canvas.getContext('2d');
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imgData.data;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Build integral image from red channel (already grayscale)
+            const integral = new Float64Array((w + 1) * (h + 1));
+            for (let y = 0; y < h; y++) {
+                let rowSum = 0;
+                for (let x = 0; x < w; x++) {
+                    rowSum += d[(y * w + x) * 4];
+                    integral[(y + 1) * (w + 1) + (x + 1)] = rowSum + integral[y * (w + 1) + (x + 1)];
+                }
             }
-            
+
+            const blockSize = Math.max(3, Math.round(Math.min(w, h) * blockRatio) | 1);
+            const half = Math.floor(blockSize / 2);
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const x1 = Math.max(0, x - half);
+                    const y1 = Math.max(0, y - half);
+                    const x2 = Math.min(w - 1, x + half);
+                    const y2 = Math.min(h - 1, y + half);
+                    const area = (x2 - x1 + 1) * (y2 - y1 + 1);
+
+                    const sum = integral[(y2 + 1) * (w + 1) + (x2 + 1)]
+                              - integral[y1 * (w + 1) + (x2 + 1)]
+                              - integral[(y2 + 1) * (w + 1) + x1]
+                              + integral[y1 * (w + 1) + x1];
+
+                    const mean = sum / area;
+                    const idx = (y * w + x) * 4;
+                    const val = d[idx] < (mean - cOffset) ? 0 : 255;
+                    d[idx] = d[idx + 1] = d[idx + 2] = val;
+                }
+            }
             ctx.putImageData(imgData, 0, 0);
         }
 
-        // Levenshtein string distance algorithm
-        function getLevenshteinDistance(a, b) {
-            const matrix = [];
-            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-
-            for (let i = 1; i <= b.length; i++) {
-                for (let j = 1; j <= a.length; j++) {
-                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                        matrix[i][j] = matrix[i - 1][j - 1];
-                    } else {
-                        matrix[i][j] = Math.min(
-                            matrix[i - 1][j - 1] + 1, // substitution
-                            matrix[i][j - 1] + 1,     // insertion
-                            matrix[i - 1][j] + 1      // deletion
-                        );
-                    }
-                }
+        // Global threshold binarization (simple but effective fallback)
+        function globalBinarize(canvas, thresholdMultiplier) {
+            const ctx = canvas.getContext('2d');
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imgData.data;
+            let total = 0;
+            for (let i = 0; i < d.length; i += 4) total += d[i];
+            const avg = total / (d.length / 4);
+            const threshold = avg * thresholdMultiplier;
+            for (let i = 0; i < d.length; i += 4) {
+                const val = d[i] < threshold ? 0 : 255;
+                d[i] = d[i + 1] = d[i + 2] = val;
             }
-            return matrix[b.length][a.length];
+            ctx.putImageData(imgData, 0, 0);
         }
 
-        // Returns similarity ratio from 0.0 (totally different) to 1.0 (exact match)
+        // Invert canvas colors (for dark-background cards)
+        function invertCanvas(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+                d[i] = 255 - d[i];
+                d[i + 1] = 255 - d[i + 1];
+                d[i + 2] = 255 - d[i + 2];
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        // Clone a canvas
+        function cloneCanvas(src) {
+            const c = document.createElement('canvas');
+            c.width = src.width;
+            c.height = src.height;
+            c.getContext('2d').drawImage(src, 0, 0);
+            return c;
+        }
+
+        // Detect if the image is mostly dark (dark-background card)
+        function isDarkImage(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imgData.data;
+            let total = 0;
+            for (let i = 0; i < d.length; i += 4) total += d[i];
+            return (total / (d.length / 4)) < 128;
+        }
+
+        // --- MULTI-PASS OCR: Try multiple preprocessing strategies, pick best ---
+
+        async function multiPassOCR(worker, srcCanvas, sx, sy, sw, sh, psmMode, displayCanvas) {
+            // Create the upscaled + padded base canvas
+            const baseCanvas = cropUpscalePad(srcCanvas, sx, sy, sw, sh);
+            grayscaleCanvas(baseCanvas);
+
+            const dark = isDarkImage(baseCanvas);
+
+            // Strategy 1: Adaptive local threshold (best for most cards)
+            const s1 = cloneCanvas(baseCanvas);
+            adaptiveBinarize(s1, 0.125, 15);
+            if (dark) invertCanvas(s1);
+
+            // Strategy 2: Global threshold at 0.85 (good for clean bright cards)
+            const s2 = cloneCanvas(baseCanvas);
+            globalBinarize(s2, 0.85);
+            if (dark) invertCanvas(s2);
+
+            // Strategy 3: Global threshold at 0.70 (aggressive, dark cards)
+            const s3 = cloneCanvas(baseCanvas);
+            globalBinarize(s3, 0.70);
+            if (dark) invertCanvas(s3);
+
+            // Strategy 4: Inverted adaptive (for white text on dark bg)
+            const s4 = cloneCanvas(baseCanvas);
+            invertCanvas(s4);
+            adaptiveBinarize(s4, 0.15, 10);
+
+            const strategies = [s1, s2, s3, s4];
+            let bestText = '';
+            let bestConf = -1;
+            let bestCanvas = s1;
+
+            for (const stratCanvas of strategies) {
+                try {
+                    await worker.setParameters({
+                        tessedit_pageseg_mode: String(psmMode),
+                        tessedit_char_whitelist: '',  // Allow all characters for max accuracy
+                    });
+                    const result = await worker.recognize(stratCanvas);
+                    const conf = result.data.confidence || 0;
+                    const text = (result.data.text || '').trim();
+
+                    console.log(`OCR strategy conf=${conf}, text="${text}"`);
+
+                    if (conf > bestConf && text.length > 0) {
+                        bestConf = conf;
+                        bestText = text;
+                        bestCanvas = stratCanvas;
+                    }
+                } catch (e) {
+                    console.warn("OCR strategy failed:", e);
+                }
+            }
+
+            // Draw the winning strategy canvas into the diagnostic display
+            if (displayCanvas) {
+                displayCanvas.width = bestCanvas.width;
+                displayCanvas.height = bestCanvas.height;
+                displayCanvas.getContext('2d').drawImage(bestCanvas, 0, 0);
+            }
+
+            return { text: bestText, confidence: bestConf };
+        }
+
+        // --- FULL CARD OCR FALLBACK ---
+        // When header/footer crops fail, scan the entire card to find name + number
+
+        async function fullCardOCR(worker, srcCanvas) {
+            const W = srcCanvas.width;
+            const H = srcCanvas.height;
+
+            // Scan entire image (upscaled 2x, not 3x, to save time)
+            const c = document.createElement('canvas');
+            const scale = 2;
+            c.width = Math.round(W * scale) + PADDING * 2;
+            c.height = Math.round(H * scale) + PADDING * 2;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, c.width, c.height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(srcCanvas, 0, 0, W, H, PADDING, PADDING, W * scale, H * scale);
+
+            grayscaleCanvas(c);
+            adaptiveBinarize(c, 0.125, 15);
+
+            await worker.setParameters({
+                tessedit_pageseg_mode: '3', // PSM 3: Fully automatic page segmentation
+                tessedit_char_whitelist: '',
+            });
+
+            const res = await worker.recognize(c);
+            return (res.data.text || '').trim();
+        }
+
+        // --- LEVENSHTEIN STRING DISTANCE ---
+
+        function getLevenshteinDistance(a, b) {
+            if (a.length === 0) return b.length;
+            if (b.length === 0) return a.length;
+
+            // Optimized single-row DP
+            let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+            for (let i = 1; i <= a.length; i++) {
+                const curr = [i];
+                for (let j = 1; j <= b.length; j++) {
+                    const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                    curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+                }
+                prev = curr;
+            }
+            return prev[b.length];
+        }
+
         function getStringSimilarity(s1, s2) {
             s1 = s1.toLowerCase().trim();
             s2 = s2.toLowerCase().trim();
             if (s1 === s2) return 1.0;
-            if (s1.length === 0 || s2.length === 0) return 0.0;
-            
+            if (!s1 || !s2) return 0.0;
             const maxLen = Math.max(s1.length, s2.length);
-            const dist = getLevenshteinDistance(s1, s2);
-            return (maxLen - dist) / maxLen;
+            return (maxLen - getLevenshteinDistance(s1, s2)) / maxLen;
         }
 
-        // Cleans up headers to isolate the card name
+        // Word-level partial matching: checks if ANY word from OCR appears as substring in candidate
+        function getWordOverlapScore(ocrName, candidateName) {
+            const ocrWords = ocrName.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length >= 3);
+            const candLower = candidateName.toLowerCase();
+            if (ocrWords.length === 0) return 0;
+            let matches = 0;
+            for (const word of ocrWords) {
+                if (candLower.includes(word)) matches++;
+            }
+            return matches / ocrWords.length;
+        }
+
+        // Combined smart similarity: blends Levenshtein + word overlap
+        function getSmartSimilarity(ocrName, candidateName) {
+            const levScore = getStringSimilarity(ocrName, candidateName);
+            const wordScore = getWordOverlapScore(ocrName, candidateName);
+            // Pick whichever is higher, weighted blend
+            return Math.max(levScore, wordScore * 0.85);
+        }
+
+        // --- TEXT CLEANING ---
+
         function cleanOCRName(text) {
             if (!text) return "";
-            let cleaned = text.toUpperCase();
-            // Remove common Pokémon cards keywords and UI text
-            cleaned = cleaned.replace(/\b(HP|\d+HP|STAGE|BASIC|LEVEL|LV|LV\.\d+)\b/g, ' ');
-            cleaned = cleaned.replace(/[^A-Z\s]/g, ' '); // Strip non-letters
+            let cleaned = text;
+
+            // Remove newlines, join into single line, take first meaningful line
+            const lines = cleaned.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length > 0) cleaned = lines[0]; // Card name is always the first line
+
+            cleaned = cleaned.toUpperCase();
+
+            // Remove HP values like "HP 60", "60HP", "HP60"
+            cleaned = cleaned.replace(/\b\d+\s*HP\b/g, '');
+            cleaned = cleaned.replace(/\bHP\s*\d+\b/g, '');
+
+            // Remove common card keywords
+            cleaned = cleaned.replace(/\b(STAGE\s*\d*|BASIC|LEVEL\s*\d+|LV\.?\s*\d+|EX|GX|VMAX|VSTAR|V\b|MEGA|BREAK)\b/gi, '');
+
+            // Remove isolated single characters (OCR noise like "N", "Jj", "H")
+            cleaned = cleaned.replace(/\b[A-Z]{1,2}\b/g, ' ');
+
+            // Keep only letters, spaces, hyphens, apostrophes (for names like Mr. Mime, Farfetch'd)
+            cleaned = cleaned.replace(/[^A-Z\s\-']/g, ' ');
             cleaned = cleaned.replace(/\s+/g, ' ').trim();
-            
-            // Format to Title Case
-            return cleaned.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+            // Remove leading/trailing short noise words
+            const words = cleaned.split(' ').filter(w => w.length >= 3);
+            cleaned = words.join(' ');
+
+            if (!cleaned) return "";
+
+            // Title Case
+            return cleaned.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
 
-        // Cleans footers to locate numbers
         function cleanOCRNumber(text) {
             if (!text) return null;
-            // Format matches like "90/198" or "080/100"
-            const slashMatch = text.match(/(\d+)\s*\/\s*(\d+)/);
+            // Normalize common OCR mistakes: O -> 0, l/I -> 1
+            let normalized = text.replace(/[Oo]/g, '0').replace(/[lI|]/g, '1');
+
+            // Match "90/198", "080/100" etc.
+            const slashMatch = normalized.match(/(\d{1,4})\s*[\/\\]\s*(\d{1,4})/);
             if (slashMatch) {
-                return {
-                    number: slashMatch[1],
-                    total: slashMatch[2],
-                    full: `${slashMatch[1]}/${slashMatch[2]}`
-                };
+                return { number: slashMatch[1], total: slashMatch[2], full: `${slashMatch[1]}/${slashMatch[2]}` };
             }
-            // Fallback to standalone 2-3 digit numbers
-            const numMatch = text.match(/\b\d{2,3}\b/);
+            // Standalone 2-3 digit numbers
+            const numMatch = normalized.match(/\b(\d{2,3})\b/);
             if (numMatch) {
-                return {
-                    number: numMatch[0],
-                    total: null,
-                    full: numMatch[0]
-                };
+                return { number: numMatch[1], total: null, full: numMatch[1] };
             }
             return null;
         }
 
-        // Queries the database and fuzzy matches candidates
+        // Extract name from full-card OCR text (first line that looks like a name)
+        function extractNameFromFullText(fullText) {
+            const lines = fullText.split(/[\r\n]+/).map(l => l.trim()).filter(l => l.length > 2);
+            for (const line of lines) {
+                // Skip lines that are mostly numbers, or contain typical non-name keywords
+                if (/^\d+/.test(line)) continue;
+                if (/weakness|resistance|retreat|damage|attack|energy|illustrator/i.test(line)) continue;
+                // First line with 3+ alphabetic characters is likely the name
+                const alphaCount = (line.match(/[a-zA-Z]/g) || []).length;
+                if (alphaCount >= 3) {
+                    return cleanOCRName(line);
+                }
+            }
+            return "";
+        }
+
+        // Extract number from full-card OCR text
+        function extractNumberFromFullText(fullText) {
+            // Look for slash-separated numbers anywhere in text
+            const slashMatch = fullText.match(/(\d{1,4})\s*[\/\\]\s*(\d{1,4})/);
+            if (slashMatch) {
+                return { number: slashMatch[1], total: slashMatch[2], full: `${slashMatch[1]}/${slashMatch[2]}` };
+            }
+            return null;
+        }
+
+        // --- DATABASE FUZZY SEARCH ---
+
         async function searchTCGWithOCR(cleanedName, ocrNumberObj) {
             try {
-                let cards = [];
-                
-                // Priority 1: Query TCG API by card number (extremely efficient, narrows down to ~20 cards)
+                let allCards = [];
+
+                // Strategy 1: Search by number (very precise narrowing)
                 if (ocrNumberObj && ocrNumberObj.number) {
-                    const cleanNum = ocrNumberObj.number.replace(/^0+/, ''); // standard TCG format doesn't have leading zeroes
-                    let url = `https://api.pokemontcg.io/v2/cards?q=number:"${cleanNum}"`;
-                    const res = await fetch(url);
-                    const json = await res.json();
-                    if (json.data && json.data.length > 0) {
-                        cards = json.data;
+                    const cleanNum = ocrNumberObj.number.replace(/^0+/, '') || ocrNumberObj.number;
+                    try {
+                        const url = `https://api.pokemontcg.io/v2/cards?q=number:"${cleanNum}"&pageSize=50`;
+                        const res = await fetch(url);
+                        const json = await res.json();
+                        if (json.data) allCards.push(...json.data);
+                    } catch (e) { console.warn("Number search failed:", e); }
+                }
+
+                // Strategy 2: Search by each word of the OCR name (handles partial reads)
+                if (cleanedName && cleanedName.length >= 3) {
+                    const words = cleanedName.split(' ').filter(w => w.length >= 3);
+                    // Try the longest word first (most likely the actual Pokémon name)
+                    words.sort((a, b) => b.length - a.length);
+
+                    for (const word of words.slice(0, 2)) { // Max 2 word queries to avoid rate limits
+                        try {
+                            const url = `https://api.pokemontcg.io/v2/cards?q=name:"${word}"&pageSize=30`;
+                            const res = await fetch(url);
+                            const json = await res.json();
+                            if (json.data) allCards.push(...json.data);
+                        } catch (e) { console.warn("Name search failed:", e); }
                     }
                 }
-                
-                // Priority 2: Query by card name if number search failed/was empty
-                if (cards.length === 0 && cleanedName && cleanedName.length > 2) {
-                    const qName = cleanedName.replace(/"/g, '');
-                    let url = `https://api.pokemontcg.io/v2/cards?q=name:"*${qName}*"`;
-                    const res = await fetch(url);
-                    const json = await res.json();
-                    if (json.data && json.data.length > 0) {
-                        cards = json.data;
-                    }
-                }
-                
-                // Rank candidates based on string similarity with OCR name
-                if (cards.length > 0) {
+
+                // Deduplicate by card id
+                const seen = new Set();
+                allCards = allCards.filter(c => {
+                    if (seen.has(c.id)) return false;
+                    seen.add(c.id);
+                    return true;
+                });
+
+                console.log(`Total unique candidates: ${allCards.length}`);
+
+                // Rank all candidates
+                if (allCards.length > 0 && cleanedName) {
                     let bestMatch = null;
                     let highestScore = -1;
-                    
-                    for (const card of cards) {
-                        const nameScore = getStringSimilarity(cleanedName, card.name);
-                        
-                        let numScore = 1.0;
-                        if (ocrNumberObj && ocrNumberObj.total && card.set && card.set.printedTotal) {
-                            if (parseInt(ocrNumberObj.total) !== card.set.printedTotal) {
-                                numScore = 0.5; // Slight penalty for different printed set total
+
+                    for (const card of allCards) {
+                        const nameScore = getSmartSimilarity(cleanedName, card.name);
+
+                        let numBonus = 0;
+                        if (ocrNumberObj && ocrNumberObj.number) {
+                            const cardNum = String(card.number);
+                            const ocrNum = ocrNumberObj.number.replace(/^0+/, '');
+                            if (cardNum === ocrNum) numBonus = 0.3; // Big bonus for exact number match
+                        }
+
+                        let setBonus = 0;
+                        if (ocrNumberObj && ocrNumberObj.total && card.set) {
+                            const ocrTotal = parseInt(ocrNumberObj.total);
+                            if (card.set.printedTotal === ocrTotal || card.set.total === ocrTotal) {
+                                setBonus = 0.15; // Bonus for matching set size
                             }
                         }
-                        
-                        // Weighted score: 70% name match, 30% set size match
-                        const finalScore = nameScore * 0.7 + numScore * 0.3;
-                        
+
+                        const finalScore = nameScore + numBonus + setBonus;
+
                         if (finalScore > highestScore) {
                             highestScore = finalScore;
                             bestMatch = card;
                         }
                     }
-                    
-                    // Sanity check: must match name with at least 20% confidence
-                    if (bestMatch && highestScore > 0.2) {
+
+                    console.log(`Best match: "${bestMatch?.name}" score=${highestScore.toFixed(3)}`);
+
+                    // Accept if score is at least 0.25 (very lenient to handle OCR noise)
+                    if (bestMatch && highestScore >= 0.25) {
                         return bestMatch;
                     }
                 }
             } catch (e) {
-                console.error("Fuzzy TCG match API error:", e);
+                console.error("Fuzzy TCG match error:", e);
             }
             return null;
         }
 
-        // Run local OCR scan pipeline
+        // --- MAIN LOCAL OCR PIPELINE ---
+
         async function processWithLocalOCR() {
             els.loading.classList.remove('hidden');
             els.ocrDiagnostics.classList.remove('hidden');
-            els.loadingSpinner.classList.add('hidden'); // Hide general spinner since we show custom diagnostics status
-            
-            // Reset diagnostics panel
+            els.loadingSpinner.classList.add('hidden');
+
+            // Reset diagnostics
             els.ocrStatusHeader.textContent = "Menunggu...";
             els.ocrStatusHeader.className = "text-blue-400 font-mono";
             els.ocrStatusFooter.textContent = "Menunggu...";
             els.ocrStatusFooter.className = "text-blue-400 font-mono";
             els.ocrResultHeader.textContent = "-";
             els.ocrResultFooter.textContent = "-";
-            
-            els.loadingText.textContent = "Menyiapkan AI Scanner Lokal...";
-            
+            els.loadingText.textContent = "Menyiapkan Scanner Lokal v2...";
+
             const worker = await initTesseract();
             if (!worker) {
-                alert("Gagal memuat AI Scanner Lokal. Silakan gunakan Gemini AI atau coba lagi.");
+                alert("Gagal memuat Scanner Lokal. Silakan gunakan Gemini AI atau coba lagi.");
                 els.loading.classList.add('hidden');
                 els.ocrDiagnostics.classList.add('hidden');
                 els.loadingSpinner.classList.remove('hidden');
@@ -863,82 +1140,79 @@
             try {
                 const W = els.canvas.width;
                 const H = els.canvas.height;
-                
-                // Calculate centered Card dimensions on the drawn canvas
-                let cardW, cardH;
-                if (W > H) {
-                    cardH = H * 0.82;
-                    cardW = cardH * (2.5 / 3.5);
-                } else {
-                    cardW = W * 0.68;
-                    cardH = cardW * (3.5 / 2.5);
-                    if (cardH > H * 0.9) {
-                        cardH = H * 0.9;
-                        cardW = cardH * (2.5 / 3.5);
+
+                // Use FULL canvas as the card region (user already framed the card in the box)
+                // No need to guess card position — the card IS the image
+                const cardX = 0;
+                const cardY = 0;
+                const cardW = W;
+                const cardH = H;
+
+                // --- CROP REGIONS (Pokémon TCG standard layout) ---
+                // Name: top strip (0-10% of card height), full width
+                const hX = cardX;
+                const hY = cardY;
+                const hW = cardW;
+                const hH = Math.round(cardH * 0.09);
+
+                // Footer/Number: bottom strip (92-100% of card height), full width
+                const fX = cardX;
+                const fY = Math.round(cardY + cardH * 0.91);
+                const fW = cardW;
+                const fH = cardH - fY;
+
+                // === PASS 1: Multi-strategy OCR on Header (Name) ===
+                els.loadingText.textContent = "Membaca nama kartu (multi-pass)...";
+                els.ocrStatusHeader.textContent = "Multi-pass...";
+                els.ocrStatusHeader.className = "text-yellow-400 font-mono animate-pulse";
+
+                const headerResult = await multiPassOCR(worker, els.canvas, hX, hY, hW, hH, 7, els.canvasCropHeader);
+                els.ocrResultHeader.textContent = headerResult.text || "(tidak terbaca)";
+                els.ocrStatusHeader.textContent = `✓ ${headerResult.confidence}%`;
+                els.ocrStatusHeader.className = "text-green-400 font-mono";
+
+                // === PASS 2: Multi-strategy OCR on Footer (Number) ===
+                els.loadingText.textContent = "Membaca nomor kartu (multi-pass)...";
+                els.ocrStatusFooter.textContent = "Multi-pass...";
+                els.ocrStatusFooter.className = "text-yellow-400 font-mono animate-pulse";
+
+                const footerResult = await multiPassOCR(worker, els.canvas, fX, fY, fW, fH, 7, els.canvasCropFooter);
+                els.ocrResultFooter.textContent = footerResult.text || "(tidak terbaca)";
+                els.ocrStatusFooter.textContent = `✓ ${footerResult.confidence}%`;
+                els.ocrStatusFooter.className = "text-green-400 font-mono";
+
+                // Clean results
+                let cleanedName = cleanOCRName(headerResult.text);
+                let ocrNumObj = cleanOCRNumber(footerResult.text);
+
+                console.log("=== OCR v2 Results ===");
+                console.log("Raw header:", headerResult.text, "conf:", headerResult.confidence);
+                console.log("Raw footer:", footerResult.text, "conf:", footerResult.confidence);
+                console.log("Cleaned name:", cleanedName);
+                console.log("Cleaned number:", ocrNumObj);
+
+                // === PASS 3: Full-card OCR fallback if header/footer were weak ===
+                if ((!cleanedName || cleanedName.length < 3) || headerResult.confidence < 40) {
+                    els.loadingText.textContent = "Pemindaian penuh kartu (fallback)...";
+                    console.log("Header OCR weak, running full-card fallback...");
+
+                    const fullText = await fullCardOCR(worker, els.canvas);
+                    console.log("Full card OCR text:", fullText);
+
+                    if (!cleanedName || cleanedName.length < 3) {
+                        cleanedName = extractNameFromFullText(fullText);
+                        els.ocrResultHeader.textContent += ` → ${cleanedName}`;
+                        console.log("Extracted name from full text:", cleanedName);
+                    }
+                    if (!ocrNumObj) {
+                        ocrNumObj = extractNumberFromFullText(fullText);
+                        if (ocrNumObj) els.ocrResultFooter.textContent += ` → ${ocrNumObj.full}`;
+                        console.log("Extracted number from full text:", ocrNumObj);
                     }
                 }
-                const cardX = (W - cardW) / 2;
-                const cardY = (H - cardH) / 2;
 
-                // Crop Title (Header) and collector number (Footer)
-                const hX = cardX + cardW * 0.05;
-                const hY = cardY + cardH * 0.035;
-                const hW = cardW * 0.9;
-                const hH = cardH * 0.11;
-
-                const fX = cardX + cardW * 0.05;
-                const fY = cardY + cardH * 0.885;
-                const fW = cardW * 0.9;
-                const fH = cardH * 0.08;
-
-                // Render crops on diagnostic canvases
-                const headerCtx = els.canvasCropHeader.getContext('2d');
-                els.canvasCropHeader.width = hW;
-                els.canvasCropHeader.height = hH;
-                headerCtx.drawImage(els.canvas, hX, hY, hW, hH, 0, 0, hW, hH);
-
-                const footerCtx = els.canvasCropFooter.getContext('2d');
-                els.canvasCropFooter.width = fW;
-                els.canvasCropFooter.height = fH;
-                footerCtx.drawImage(els.canvas, fX, fY, fW, fH, 0, 0, fW, fH);
-
-                // Apply binarization filters for high contrast
-                binarizeCanvas(els.canvasCropHeader);
-                binarizeCanvas(els.canvasCropFooter);
-
-                // 1. Scan Header (Name)
-                els.loadingText.textContent = "Membaca nama kartu...";
-                els.ocrStatusHeader.textContent = "Menganalisis...";
-                els.ocrStatusHeader.className = "text-yellow-400 font-mono";
-                
-                const headerRes = await worker.recognize(els.canvasCropHeader);
-                const rawNameText = headerRes.data.text;
-                els.ocrResultHeader.textContent = rawNameText.trim() || "(tidak terbaca)";
-                els.ocrStatusHeader.textContent = "Selesai";
-                els.ocrStatusHeader.className = "text-green-400 font-mono animate-pulse";
-
-                // 2. Scan Footer (Number)
-                els.loadingText.textContent = "Membaca nomor kartu...";
-                els.ocrStatusFooter.textContent = "Menganalisis...";
-                els.ocrStatusFooter.className = "text-yellow-400 font-mono";
-
-                const footerRes = await worker.recognize(els.canvasCropFooter);
-                const rawNumberText = footerRes.data.text;
-                els.ocrResultFooter.textContent = rawNumberText.trim() || "(tidak terbaca)";
-                els.ocrStatusFooter.textContent = "Selesai";
-                els.ocrStatusFooter.className = "text-green-400 font-mono animate-pulse";
-
-                // 3. Clean Text
-                const cleanedName = cleanOCRName(rawNameText);
-                const ocrNumObj = cleanOCRNumber(rawNumberText);
-
-                console.log("OCR Detected Raw Name:", rawNameText);
-                console.log("OCR Detected Raw Number:", rawNumberText);
-                console.log("Cleaned Name:", cleanedName);
-                console.log("Cleaned Number:", ocrNumObj);
-
-                // 4. Fuzzy Database Search
-                els.loadingText.textContent = "Mencari di database...";
+                // === SEARCH DATABASE ===
+                els.loadingText.textContent = "Mencari di database Pokémon...";
                 const matchedCard = await searchTCGWithOCR(cleanedName, ocrNumObj);
 
                 if (matchedCard) {
@@ -948,21 +1222,21 @@
                         type: (matchedCard.supertype || 'POKEMON').toUpperCase(),
                         hp: matchedCard.hp || '',
                         number: matchedCard.number || (ocrNumObj ? ocrNumObj.full : ''),
-                        image: matchedCard.images.large || matchedCard.images.small,
+                        image: matchedCard.images?.large || matchedCard.images?.small,
                         set: matchedCard.set?.name || 'Unknown Set',
                         timestamp: Date.now()
                     };
                     showResultModal(pendingCardData);
                 } else {
-                    // Fallback to searching just the name
+                    // Last resort: try just the name with the original fetchTCGData
                     if (cleanedName && cleanedName.length > 2) {
-                        els.loadingText.textContent = "Mencocokkan fallback nama...";
-                        const tcgFallback = await fetchTCGData(cleanedName, null);
-                        
+                        els.loadingText.textContent = "Pencarian fallback terakhir...";
+                        const tcgFallback = await fetchTCGData(cleanedName, ocrNumObj ? ocrNumObj.full : null);
+
                         pendingCardData = {
                             id: 'card_' + Date.now(),
                             name: cleanedName,
-                            type: 'POKEMON',
+                            type: tcgFallback ? (tcgFallback.supertype || 'POKEMON').toUpperCase() : 'POKEMON',
                             hp: '',
                             number: ocrNumObj ? ocrNumObj.full : '',
                             image: tcgFallback ? tcgFallback.image : null,
@@ -971,13 +1245,13 @@
                         };
                         showResultModal(pendingCardData);
                     } else {
-                        alert("Tidak dapat membaca kartu. Pastikan cahaya terang, kartu lurus, dan sejajar di dalam kotak.");
+                        alert("Tidak dapat membaca kartu. Tips:\n• Pastikan pencahayaan terang dan merata\n• Posisikan kartu lurus dalam kotak\n• Hindari pantulan cahaya pada kartu\n• Coba unggah foto yang lebih jelas");
                         startCamera();
                     }
                 }
             } catch (err) {
-                console.error("Local OCR pipeline failed:", err);
-                alert("Terjadi kesalahan pembacaan lokal: " + err.message);
+                console.error("Local OCR v2 pipeline failed:", err);
+                alert("Terjadi kesalahan: " + err.message);
                 startCamera();
             } finally {
                 els.loading.classList.add('hidden');
