@@ -78,7 +78,7 @@
 
                 <!-- Overlay Frame -->
                 <div id="scanner-frame" class="absolute inset-0 z-10 pointer-events-none flex flex-col items-center justify-center">
-                    <div class="w-2/3 max-w-sm aspect-[2.5/3.5] border-2 border-white/50 rounded-xl relative overflow-hidden shadow-[0_0_0_999px_rgba(0,0,0,0.5)]">
+                    <div id="scanner-box" class="w-2/3 max-w-sm aspect-[2.5/3.5] border-2 border-white/50 rounded-xl relative overflow-hidden shadow-[0_0_0_999px_rgba(0,0,0,0.5)]">
                         <div class="scanner-line"></div>
                     </div>
                     <p class="mt-4 text-xs bg-black/60 px-3 py-1 rounded-full text-white">Posisikan kartu dalam kotak</p>
@@ -380,9 +380,69 @@
         // --- 4. IMAGE PROCESSING & AI ---
         function captureImage() {
             if (!els.video.videoWidth) return null;
-            els.canvas.width = els.video.videoWidth;
-            els.canvas.height = els.video.videoHeight;
-            els.canvas.getContext('2d').drawImage(els.video, 0, 0);
+            
+            const video = els.video;
+            const scannerBox = document.getElementById('scanner-box');
+            
+            if (!scannerBox) {
+                // Fallback to full screen if scanner box is not found
+                els.canvas.width = video.videoWidth;
+                els.canvas.height = video.videoHeight;
+                els.canvas.getContext('2d').drawImage(video, 0, 0);
+                return els.canvas.toDataURL('image/jpeg', 0.8);
+            }
+            
+            const videoRect = video.getBoundingClientRect();
+            const boxRect = scannerBox.getBoundingClientRect();
+            
+            if (!videoRect.width || !videoRect.height) {
+                // Fallback to full screen if video dimensions are 0
+                els.canvas.width = video.videoWidth;
+                els.canvas.height = video.videoHeight;
+                els.canvas.getContext('2d').drawImage(video, 0, 0);
+                return els.canvas.toDataURL('image/jpeg', 0.8);
+            }
+            
+            const boxLeft = boxRect.left - videoRect.left;
+            const boxTop = boxRect.top - videoRect.top;
+            const boxWidth = boxRect.width;
+            const boxHeight = boxRect.height;
+            
+            // Map CSS pixels of the box to actual video resolution pixels using object-cover logic
+            function mapDisplayToVideo(xCss, yCss, displayWidth, displayHeight, videoWidth, videoHeight) {
+                const rVideo = videoWidth / videoHeight;
+                const rContainer = displayWidth / displayHeight;
+                
+                let xVideo, yVideo;
+                if (rVideo > rContainer) {
+                    // Video is wider than container, height fits, width is cropped & centered
+                    const scale = videoHeight / displayHeight;
+                    xVideo = (xCss - displayWidth / 2) * scale + videoWidth / 2;
+                    yVideo = yCss * scale;
+                } else {
+                    // Video is taller than container, width fits, height is cropped & centered
+                    const scale = videoWidth / displayWidth;
+                    xVideo = xCss * scale;
+                    yVideo = (yCss - displayHeight / 2) * scale + videoHeight / 2;
+                }
+                return { x: xVideo, y: yVideo };
+            }
+            
+            const videoStart = mapDisplayToVideo(boxLeft, boxTop, videoRect.width, videoRect.height, video.videoWidth, video.videoHeight);
+            const videoEnd = mapDisplayToVideo(boxLeft + boxWidth, boxTop + boxHeight, videoRect.width, videoRect.height, video.videoWidth, video.videoHeight);
+            
+            // Clamp coordinates to stay within video boundary
+            const sx = Math.max(0, Math.min(video.videoWidth - 1, videoStart.x));
+            const sy = Math.max(0, Math.min(video.videoHeight - 1, videoStart.y));
+            const sw = Math.max(1, Math.min(video.videoWidth - sx, videoEnd.x - videoStart.x));
+            const sh = Math.max(1, Math.min(video.videoHeight - sy, videoEnd.y - videoStart.y));
+            
+            // Set canvas size to the cropped dimensions and draw cropped region
+            els.canvas.width = sw;
+            els.canvas.height = sh;
+            const ctx = els.canvas.getContext('2d');
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+            
             return els.canvas.toDataURL('image/jpeg', 0.8);
         }
 
