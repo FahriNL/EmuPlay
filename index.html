@@ -25,7 +25,7 @@
         .hidden { display: none !important; }
     </style>
 </head>
-<body class="flex flex-col h-screen w-screen overflow-hidden text-sm sm:text-base">
+<body class="flex flex-col h-[100dvh] w-screen overflow-hidden text-sm sm:text-base">
 
     <!-- HEADER -->
     <header class="flex items-center justify-between px-4 py-3 bg-slate-800 shadow-md z-20">
@@ -37,9 +37,14 @@
             <button id="tab-scan" class="px-4 py-1.5 rounded-md font-bold bg-slate-700 text-yellow-400 transition-all">Scan</button>
             <button id="tab-collection" class="px-4 py-1.5 rounded-md font-bold text-gray-400 transition-all">Koleksi</button>
         </div>
-        <button id="btn-settings" class="p-2 bg-slate-700 rounded-full text-white">
-            <i data-lucide="settings" class="w-5 h-5"></i>
-        </button>
+        <div class="flex space-x-2">
+            <button id="btn-search-manual" class="p-2 bg-slate-700 rounded-full text-white active:scale-95 transition-transform" title="Cari Manual">
+                <i data-lucide="search" class="w-5 h-5"></i>
+            </button>
+            <button id="btn-settings" class="p-2 bg-slate-700 rounded-full text-white">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
     </header>
 
     <!-- MAIN CONTENT -->
@@ -55,6 +60,11 @@
                 
                 <!-- Preview Captured Image -->
                 <img id="image-preview" class="absolute inset-0 w-full h-full object-contain bg-black hidden z-10" />
+
+                <!-- Flashlight Button -->
+                <button id="btn-torch" class="absolute top-4 right-4 z-20 p-2.5 bg-slate-900/95 backdrop-blur border border-slate-700 rounded-full text-white shadow-2xl active:scale-95 transition-all" title="Toggle Senter">
+                    <i data-lucide="zap-off" class="w-5 h-5"></i>
+                </button>
 
                 <!-- Mode Toggle Overlay -->
                 <div class="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex bg-slate-900/95 backdrop-blur border border-slate-700 rounded-full p-1 shadow-2xl">
@@ -123,7 +133,7 @@
             </div>
 
             <!-- Bottom Controls -->
-            <div id="scanner-controls" class="h-28 bg-slate-900 flex items-center justify-center border-t border-slate-800 z-20">
+            <div id="scanner-controls" class="h-24 pb-2 bg-slate-900 flex items-center justify-center border-t border-slate-800 z-20 relative">
                 <button id="btn-capture" class="w-16 h-16 bg-white rounded-full border-4 border-slate-400 flex items-center justify-center active:scale-90 transition-transform">
                     <div class="w-12 h-12 bg-white rounded-full border border-gray-300 flex items-center justify-center"></div>
                 </button>
@@ -160,6 +170,41 @@
             <div class="flex space-x-3">
                 <button id="btn-save-key" class="flex-1 bg-yellow-500 text-slate-900 font-bold py-3 rounded-lg">Simpan</button>
                 <button onclick="document.getElementById('modal-settings').classList.add('hidden')" class="px-4 bg-slate-700 rounded-lg">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Search Modal -->
+    <div id="modal-manual-search" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 p-6 rounded-2xl w-full max-w-sm border border-slate-700 shadow-2xl relative flex flex-col max-h-[90vh]">
+            <button id="btn-close-manual-search" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h2 class="text-xl font-bold mb-2 flex items-center"><i data-lucide="search" class="mr-2 text-yellow-400"></i> Cari Manual</h2>
+            <p class="text-xs text-gray-400 mb-4">Gunakan pencarian manual jika kamera kesulitan mendeteksi teks kartu Anda.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">NAMA KARTU</label>
+                    <input type="text" id="input-manual-name" placeholder="Contoh: Pikachu, Charizard" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">NOMOR KARTU (OPSIONAL)</label>
+                    <input type="text" id="input-manual-number" placeholder="Contoh: 25, 025/198" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400">
+                </div>
+                
+                <button id="btn-manual-search-submit" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-3.5 rounded-xl transition-colors flex justify-center items-center space-x-2">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                    <span>Cari Database</span>
+                </button>
+            </div>
+
+            <!-- Search Results -->
+            <div id="manual-search-results-container" class="mt-4 border-t border-slate-700 pt-4 flex-1 overflow-y-auto hidden space-y-2">
+                <p class="text-xs font-mono text-gray-500 uppercase tracking-wider mb-2">Hasil Pencarian</p>
+                <div id="manual-search-results-list" class="space-y-2 pb-4">
+                    <!-- Results dynamically loaded here -->
+                </div>
             </div>
         </div>
     </div>
@@ -352,7 +397,51 @@
                 currentStream.getTracks().forEach(t => t.stop());
                 currentStream = null;
             }
+            torchEnabled = false;
+            updateTorchUI();
         }
+
+        // --- FLASHLIGHT / TORCH ENGINE ---
+        let torchEnabled = false;
+        const btnTorch = document.getElementById('btn-torch');
+
+        async function toggleTorch() {
+            if (!currentStream) return;
+            const track = currentStream.getVideoTracks()[0];
+            if (!track) return;
+            
+            try {
+                // Check if device supports torch/flashlight
+                const capabilities = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+                if (capabilities && capabilities.torch) {
+                    torchEnabled = !torchEnabled;
+                    await track.applyConstraints({
+                        advanced: [{ torch: torchEnabled }]
+                    });
+                    updateTorchUI();
+                } else {
+                    alert("Fitur Senter (Flashlight) tidak didukung pada kamera perangkat ini.");
+                }
+            } catch (err) {
+                console.error("Torch error:", err);
+                alert("Gagal mengaktifkan senter kamera. Perangkat Anda mungkin tidak mendukung fitur ini di browser.");
+            }
+        }
+
+        function updateTorchUI() {
+            if (torchEnabled) {
+                btnTorch.className = "absolute top-4 right-4 z-20 p-2.5 bg-yellow-500 border border-yellow-400 rounded-full text-slate-900 shadow-[0_0_15px_rgba(234,179,8,0.5)] active:scale-95 transition-all";
+                btnTorch.innerHTML = `<i data-lucide="zap" class="w-5 h-5"></i>`;
+            } else {
+                btnTorch.className = "absolute top-4 right-4 z-20 p-2.5 bg-slate-900/95 backdrop-blur border border-slate-700 rounded-full text-white shadow-2xl active:scale-95 transition-all";
+                btnTorch.innerHTML = `<i data-lucide="zap-off" class="w-5 h-5"></i>`;
+            }
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        btnTorch.addEventListener('click', toggleTorch);
 
         // --- 3. TAB NAVIGATION ---
         function switchTab(tab) {
@@ -1209,10 +1298,10 @@
                 const cardH = H;
 
                 // --- CROP REGIONS (Pokémon TCG standard layout) ---
-                // Name: top strip (0-10% of card height), full width
+                // Name: top-left strip (0-9% height, 65% width) to isolate name and avoid HP / Energy symbols
                 const hX = cardX;
                 const hY = cardY;
-                const hW = cardW;
+                const hW = Math.round(cardW * 0.65);
                 const hH = Math.round(cardH * 0.09);
 
                 // Footer/Number: bottom strip (92-100% of card height), full width
@@ -1305,7 +1394,14 @@
                         };
                         showResultModal(pendingCardData);
                     } else {
-                        alert("Tidak dapat membaca kartu. Tips:\n• Pastikan pencahayaan terang dan merata\n• Posisikan kartu lurus dalam kotak\n• Hindari pantulan cahaya pada kartu\n• Coba unggah foto yang lebih jelas");
+                        // Pre-fill manual search with whatever OCR read to help the user
+                        elsSearch.inpName.value = cleanedName || '';
+                        elsSearch.inpNumber.value = ocrNumObj ? ocrNumObj.full : '';
+                        elsSearch.resultsContainer.classList.add('hidden');
+                        elsSearch.resultsList.innerHTML = '';
+                        
+                        elsSearch.modal.classList.remove('hidden');
+                        alert("Kamera kesulitan membaca kartu secara otomatis. Silakan periksa hasil OCR dan cari secara manual.");
                         startCamera();
                     }
                 }
@@ -1319,6 +1415,103 @@
                 els.loadingSpinner.classList.remove('hidden');
             }
         }
+
+        // --- 8. MANUAL SEARCH ENGINE ---
+        const elsSearch = {
+            modal: document.getElementById('modal-manual-search'),
+            btnClose: document.getElementById('btn-close-manual-search'),
+            btnOpen: document.getElementById('btn-search-manual'),
+            inpName: document.getElementById('input-manual-name'),
+            inpNumber: document.getElementById('input-manual-number'),
+            btnSubmit: document.getElementById('btn-manual-search-submit'),
+            resultsContainer: document.getElementById('manual-search-results-container'),
+            resultsList: document.getElementById('manual-search-results-list')
+        };
+
+        elsSearch.btnOpen.addEventListener('click', () => {
+            elsSearch.inpName.value = '';
+            elsSearch.inpNumber.value = '';
+            elsSearch.resultsContainer.classList.add('hidden');
+            elsSearch.resultsList.innerHTML = '';
+            elsSearch.modal.classList.remove('hidden');
+        });
+
+        elsSearch.btnClose.addEventListener('click', () => {
+            elsSearch.modal.classList.add('hidden');
+        });
+
+        elsSearch.btnSubmit.addEventListener('click', async () => {
+            const name = elsSearch.inpName.value.trim();
+            const number = elsSearch.inpNumber.value.trim();
+            
+            if (!name && !number) {
+                alert("Harap masukkan nama atau nomor kartu untuk mencari!");
+                return;
+            }
+            
+            elsSearch.btnSubmit.disabled = true;
+            elsSearch.btnSubmit.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mr-2"></i> Mencari...`;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            try {
+                let url = 'https://api.pokemontcg.io/v2/cards?';
+                let queries = [];
+                if (name) queries.push(`name:"*${name}*"`);
+                if (number) {
+                    const cleanNum = number.split('/')[0].replace(/^0+/, '') || number;
+                    queries.push(`number:"${cleanNum}"`);
+                }
+                url += `q=${queries.join(' ')}&pageSize=20`;
+                
+                const res = await fetch(url);
+                const json = await res.json();
+                
+                elsSearch.resultsList.innerHTML = '';
+                elsSearch.resultsContainer.classList.remove('hidden');
+                
+                if (json.data && json.data.length > 0) {
+                    json.data.forEach(card => {
+                        const btn = document.createElement('button');
+                        btn.className = "w-full flex items-center justify-between p-2 bg-slate-900 border border-slate-700 hover:border-yellow-400 rounded-lg text-left transition-all active:scale-[0.98]";
+                        btn.innerHTML = `
+                            <div class="flex items-center space-x-3 overflow-hidden">
+                                <img src="${card.images.small}" class="w-10 h-14 object-cover rounded shadow">
+                                <div class="overflow-hidden">
+                                    <p class="font-bold text-sm text-white truncate">${card.name}</p>
+                                    <p class="text-xs text-gray-500 font-mono">${card.set.name} • ${card.number}/${card.set.printedTotal || '?'}</p>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-right" class="text-gray-400 w-5 h-5 flex-shrink-0"></i>
+                        `;
+                        btn.addEventListener('click', () => {
+                            pendingCardData = {
+                                id: 'card_' + Date.now(),
+                                name: card.name,
+                                type: (card.supertype || 'POKEMON').toUpperCase(),
+                                hp: card.hp || '',
+                                number: card.number + '/' + (card.set.printedTotal || ''),
+                                image: card.images.large || card.images.small,
+                                set: card.set.name,
+                                timestamp: Date.now()
+                            };
+                            elsSearch.modal.classList.add('hidden');
+                            showResultModal(pendingCardData);
+                        });
+                        elsSearch.resultsList.appendChild(btn);
+                    });
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                } else {
+                    elsSearch.resultsList.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">Kartu tidak ditemukan. Coba periksa ejaan Anda.</p>`;
+                }
+            } catch (err) {
+                console.error("Manual search error:", err);
+                alert("Gagal menghubungi database Pokémon TCG.");
+            } finally {
+                elsSearch.btnSubmit.disabled = false;
+                elsSearch.btnSubmit.innerHTML = `<i data-lucide="search" class="w-5 h-5 mr-2"></i> Cari Database`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        });
 
         // Init App
         startCamera();
