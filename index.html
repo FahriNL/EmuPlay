@@ -950,7 +950,7 @@
 
         // --- MULTI-PASS OCR: Try multiple preprocessing strategies, pick best ---
 
-        async function multiPassOCR(worker, srcCanvas, sx, sy, sw, sh, psmMode, displayCanvas) {
+        async function multiPassOCR(worker, srcCanvas, sx, sy, sw, sh, psmMode, displayCanvas, whitelist = '') {
             // Create the upscaled + padded base canvas
             const baseCanvas = cropUpscalePad(srcCanvas, sx, sy, sw, sh);
             grayscaleCanvas(baseCanvas);
@@ -986,7 +986,7 @@
                 try {
                     await worker.setParameters({
                         tessedit_pageseg_mode: String(psmMode),
-                        tessedit_char_whitelist: '',  // Allow all characters for max accuracy
+                        tessedit_char_whitelist: whitelist,  // Restrict to whitelisted characters for accuracy
                     });
                     const result = await worker.recognize(stratCanvas);
                     const conf = result.data.confidence || 0;
@@ -1304,18 +1304,31 @@
                 const hW = Math.round(cardW * 0.65);
                 const hH = Math.round(cardH * 0.09);
 
-                // Footer/Number: bottom strip (92-100% of card height), full width
-                const fX = cardX;
-                const fY = Math.round(cardY + cardH * 0.91);
-                const fW = cardW;
-                const fH = cardH - fY;
+                // Footer Left: bottom-left corner (0-40% width, 91-100% height) for modern card numbers
+                const flX = cardX;
+                const flY = Math.round(cardY + cardH * 0.91);
+                const flW = Math.round(cardW * 0.40);
+                const flH = cardH - flY;
+
+                // Footer Right: bottom-right corner (70-100% width, 91-100% height) for classic card numbers
+                const frX = Math.round(cardX + cardW * 0.70);
+                const frY = Math.round(cardY + cardH * 0.91);
+                const frW = cardW - frX;
+                const frH = cardH - frY;
 
                 // === PASS 1: Multi-strategy OCR on Header (Name) ===
                 els.loadingText.textContent = "Membaca nama kartu (multi-pass)...";
                 els.ocrStatusHeader.textContent = "Multi-pass...";
                 els.ocrStatusHeader.className = "text-yellow-400 font-mono animate-pulse";
 
-                const headerResult = await multiPassOCR(worker, els.canvas, hX, hY, hW, hH, 7, els.canvasCropHeader);
+                const headerResult = await multiPassOCR(
+                    worker, 
+                    els.canvas, 
+                    hX, hY, hW, hH, 
+                    7, 
+                    els.canvasCropHeader,
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-\' "
+                );
                 els.ocrResultHeader.textContent = headerResult.text || "(tidak terbaca)";
                 els.ocrStatusHeader.textContent = `✓ ${headerResult.confidence}%`;
                 els.ocrStatusHeader.className = "text-green-400 font-mono";
@@ -1325,18 +1338,59 @@
                 els.ocrStatusFooter.textContent = "Multi-pass...";
                 els.ocrStatusFooter.className = "text-yellow-400 font-mono animate-pulse";
 
-                const footerResult = await multiPassOCR(worker, els.canvas, fX, fY, fW, fH, 7, els.canvasCropFooter);
-                els.ocrResultFooter.textContent = footerResult.text || "(tidak terbaca)";
-                els.ocrStatusFooter.textContent = `✓ ${footerResult.confidence}%`;
+                // Scan left footer first (modern cards)
+                const leftFooterResult = await multiPassOCR(
+                    worker, 
+                    els.canvas, 
+                    flX, flY, flW, flH, 
+                    7, 
+                    els.canvasCropFooter,
+                    "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                );
+                
+                let bestFooterText = leftFooterResult.text;
+                let bestFooterConf = leftFooterResult.confidence;
+                let selectedFooterSide = 'left';
+
+                // Scan right footer if left footer was weak or didn't read a number
+                const leftCleaned = cleanOCRNumber(leftFooterResult.text);
+                if (!leftCleaned || leftFooterResult.confidence < 50) {
+                    const rightFooterResult = await multiPassOCR(
+                        worker, 
+                        els.canvas, 
+                        frX, frY, frW, frH, 
+                        7, 
+                        null, 
+                        "0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    );
+                    
+                    const rightCleaned = cleanOCRNumber(rightFooterResult.text);
+                    if (rightCleaned && (!leftCleaned || rightFooterResult.confidence > leftFooterResult.confidence)) {
+                        bestFooterText = rightFooterResult.text;
+                        bestFooterConf = rightFooterResult.confidence;
+                        selectedFooterSide = 'right';
+                        
+                        // Redraw winning right canvas to diagnostics
+                        const baseCanvas = cropUpscalePad(els.canvas, frX, frY, frW, frH);
+                        grayscaleCanvas(baseCanvas);
+                        adaptiveBinarize(baseCanvas, 0.125, 15);
+                        els.canvasCropFooter.width = baseCanvas.width;
+                        els.canvasCropFooter.height = baseCanvas.height;
+                        els.canvasCropFooter.getContext('2d').drawImage(baseCanvas, 0, 0);
+                    }
+                }
+
+                els.ocrResultFooter.textContent = (bestFooterText || "(tidak terbaca)") + ` (${selectedFooterSide === 'left' ? 'Kiri' : 'Kanan'})`;
+                els.ocrStatusFooter.textContent = `✓ ${bestFooterConf}%`;
                 els.ocrStatusFooter.className = "text-green-400 font-mono";
 
                 // Clean results
                 let cleanedName = cleanOCRName(headerResult.text);
-                let ocrNumObj = cleanOCRNumber(footerResult.text);
+                let ocrNumObj = cleanOCRNumber(bestFooterText);
 
                 console.log("=== OCR v2 Results ===");
                 console.log("Raw header:", headerResult.text, "conf:", headerResult.confidence);
-                console.log("Raw footer:", footerResult.text, "conf:", footerResult.confidence);
+                console.log("Raw footer:", bestFooterText, "conf:", bestFooterConf, "side:", selectedFooterSide);
                 console.log("Cleaned name:", cleanedName);
                 console.log("Cleaned number:", ocrNumObj);
 
