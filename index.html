@@ -101,18 +101,18 @@
         .power-knob { width: 20px; height: 15px; background: #ddd; border-radius: 10px; position: absolute; left: 0; top: 0; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); transition: left 0.2s ease; border-right: 2px solid #bbb; }
         .console.power-on .power-knob { left: 20px; background: #8bc34a; border-right: none; border-left: 2px solid #689f38;}
 
-        .top-grooves { width: 90%; min-height: 38px; display: grid; grid-template-columns: 74px 1fr 74px; align-items: center; gap: 8px; padding: 0 4px; margin-top: 7px; }
+        .top-grooves { width: 90%; min-height: 40px; display: grid; grid-template-columns: 74px 1fr 74px; align-items: center; gap: 8px; padding: 0 4px; margin-top: 7px; }
         .l-r-btn { width: 74px; height: 28px; background: #a0a0a0; border-radius: 12px; border: 2px solid #777; cursor: pointer; display: flex; justify-content: center; align-items: center; color: #444; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 16px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.22), inset -2px -2px 5px rgba(0,0,0,0.35), 1px 2px 4px rgba(0,0,0,0.25); }
         .l-r-btn.active { background: #777; }
 
-        .screen-container { background-color: var(--screen-bg); width: 92%; height: 39%; margin-top: 6px; border-radius: 10px 10px 40px 10px; padding: 12px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; }
+        .screen-container { background-color: var(--screen-bg); width: 92%; height: auto; margin-top: 6px; border-radius: 10px 10px 40px 10px; padding: 14px 16px 18px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; flex: none; }
         .screen-top-text { color: #b8b6bf; font-size: 10px; width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px; }
         .screen-lines { width: 30px; height: 8px; border-top: 2px solid #b8b6bf; border-bottom: 2px solid #2a2082; }
-        .screen { background-color: var(--screen-color); width: 84%; aspect-ratio: 3 / 2; height: auto; flex: none; box-shadow: inset 5px 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; border-radius: 3px; }
+        .screen { background-color: var(--screen-color); width: min(84%, 340px); aspect-ratio: 3 / 2; height: auto; flex: none; box-shadow: inset 5px 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; border-radius: 3px; }
         canvas { width: 100% !important; height: 100% !important; object-fit: contain !important; image-rendering: pixelated; display: block; opacity: 0; transition: opacity 0.5s; }
         .console.power-on canvas { opacity: 1; }
 
-        .battery { position: absolute; left: 10px; top: 40%; display: flex; flex-direction: column; align-items: center; }
+        .battery { position: absolute; left: 12px; top: 58%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; }
         .battery-led { width: 10px; height: 10px; background-color: #551111; border-radius: 50%; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); }
         .console.power-on .battery-led { background-color: #ff3333; box-shadow: 0 0 8px #ff3333; }
         .battery-text { color: #b8b6bf; font-size: 8px; margin-top: 5px; }
@@ -120,11 +120,11 @@
         #bootScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; font-family: 'Press Start 2P', monospace; font-size: 10px; text-align: center; line-height: 1.5; z-index: 10; }
         .console.power-on #bootScreen { display: flex; }
 
-        .logo-area { color: var(--text-blue); font-family: 'Teko', sans-serif; font-size: 18px; text-align: center; font-style: italic; font-weight: bold; line-height: 1; white-space: nowrap; overflow: hidden; }
-        .logo-area span { color: #555; font-size: 13px; font-style: normal; font-weight: normal; }
-        .logo-area .advance-mark { color: var(--text-blue); font-size: 16px; font-style: italic; font-weight: bold; }
-        .controls-container { width: 100%; flex: 1; position: relative; margin-top: 5px; }
-        .d-pad { position: absolute; top: 20px; left: 10%; width: 120px; height: 120px; }
+        .logo-area { color: var(--text-blue); font-family: 'Teko', sans-serif; font-size: 22px; text-align: center; font-style: italic; font-weight: bold; line-height: 1; white-space: nowrap; overflow: hidden; letter-spacing: 0; }
+        .logo-area span { color: #555; font-size: 15px; font-style: normal; font-weight: normal; }
+        .logo-area .advance-mark { color: var(--text-blue); font-size: 19px; font-style: italic; font-weight: bold; }
+        .controls-container { width: 100%; flex: 1; min-height: 300px; position: relative; margin-top: 0; }
+        .d-pad { position: absolute; top: calc(34% - 60px); left: max(20px, calc(28% - 60px)); width: 120px; height: 120px; }
         .d-pad-vertical, .d-pad-horizontal { background-color: var(--dpad-color); position: absolute; border-radius: 5px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.1), inset -2px -2px 5px rgba(0,0,0,0.5), 3px 3px 5px rgba(0,0,0,0.3); }
         .d-pad-vertical { width: 40px; height: 120px; left: 40px; top: 0; }
         .d-pad-horizontal { width: 120px; height: 40px; left: 0; top: 40px; }
@@ -135,14 +135,15 @@
         .d-left { top: 30px; left: -10px; width: 60px; height: 60px; }
         .d-right { top: 30px; right: -10px; width: 60px; height: 60px; }
 
-        .action-buttons { position: absolute; top: 20px; right: 5%; width: 130px; height: 100px; transform: rotate(-25deg); }
+        .action-buttons { position: absolute; inset: 0; transform: none; pointer-events: none; }
         .btn { width: 55px; height: 55px; background-color: var(--btn-color); border-radius: 50%; position: absolute; box-shadow: inset 3px 3px 8px rgba(255,255,255,0.3), inset -3px -3px 8px rgba(0,0,0,0.5), 2px 4px 6px rgba(0,0,0,0.3); cursor: pointer; }
+        .action-buttons .btn { pointer-events: auto; }
         .btn:active, .btn.active { transform: scale(0.95); box-shadow: inset 5px 5px 10px rgba(0,0,0,0.6); }
-        .btn-b { left: 0; bottom: 0; }
-        .btn-a { right: 0; top: 0; }
+        .btn-b { left: calc(65% - 27.5px); top: calc(50% - 27.5px); }
+        .btn-a { left: calc(78% - 27.5px); top: calc(25% - 27.5px); }
         .btn-label { position: absolute; color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 18px; bottom: -25px; right: 15px; }
 
-        .system-buttons { position: absolute; bottom: 30%; left: 25%; display: flex; gap: 20px; transform: rotate(-25deg); }
+        .system-buttons { position: absolute; top: calc(72% - 20px); left: 50%; display: flex; gap: 20px; transform: translateX(-50%) rotate(-25deg); }
         .sys-btn-wrapper { display: flex; flex-direction: column; align-items: center; }
         .sys-btn { width: 55px; height: 15px; background-color: var(--select-start); border-radius: 20px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -2px -2px 5px rgba(0,0,0,0.5), 1px 2px 4px rgba(0,0,0,0.3); cursor: pointer; }
         .sys-btn:active, .sys-btn.active { transform: scale(0.95); box-shadow: inset 3px 3px 8px rgba(0,0,0,0.6); }
@@ -150,7 +151,7 @@
         .speaker { position: absolute; bottom: 5%; right: 10%; display: flex; gap: 8px; transform: rotate(-25deg); }
         .grill { width: 8px; height: 60px; background-color: #b8b6bf; border-radius: 5px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3); }
 
-        @media (max-height: 700px) { .screen-container { height: 36%; } .d-pad { transform: scale(0.85); top: 10px; left: 5%; } .action-buttons { transform: scale(0.85) rotate(-25deg); top: 10px; right: 0; } .system-buttons { bottom: 20%; transform: scale(0.85) rotate(-25deg); } }
+        @media (max-height: 700px) { .screen-container { padding: 12px 14px 16px; } .screen { width: min(82%, 320px); } .d-pad { transform: scale(0.9); transform-origin: center; } .system-buttons { top: calc(74% - 20px); transform: translateX(-50%) scale(0.9) rotate(-25deg); } }
     </style>
 </head>
 <body>
@@ -232,7 +233,7 @@
             <div class="screen-container">
                 <div class="screen-top-text"><div class="screen-lines"></div><span>ADVANCE SYSTEM</span><div class="screen-lines"></div></div>
                 <div class="battery"><div class="battery-led"></div><span class="battery-text">BATTERY</span></div>
-                <div class="screen"><canvas id="gameCanvas"></canvas><div id="bootScreen"><p id="bootText" style="color:#aaa;">Menunggu Power...</p></div></div>
+                <div class="screen"><canvas id="gameCanvas" width="240" height="160"></canvas><div id="bootScreen"><p id="bootText" style="color:#aaa;">Menunggu Power...</p></div></div>
             </div>
             <div class="top-grooves"><div class="l-r-btn" id="btn-l">L</div><div class="logo-area">Nintendo <span>GAME BOY</span> <span class="advance-mark">ADVANCE</span></div><div class="l-r-btn" id="btn-r">R</div></div>
             <div class="controls-container">
@@ -765,6 +766,39 @@
             }, 600);
         }
 
+        function resetVideoSurface() {
+            const screenEl = document.querySelector('.screen');
+            const bootScreen = document.getElementById('bootScreen');
+            const oldCanvas = document.getElementById('gameCanvas');
+            if (oldCanvas) oldCanvas.remove();
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'gameCanvas';
+            canvas.width = 240;
+            canvas.height = 160;
+            screenEl.insertBefore(canvas, bootScreen);
+            return canvas;
+        }
+
+        async function stopEmulator(message = 'Mati.', resetSurface = true) {
+            const gameboyConsole = document.getElementById('gameboyConsole');
+            const bootScreen = document.getElementById('bootScreen');
+            const bootText = document.getElementById('bootText');
+
+            isPowerOn = false;
+            gameboyConsole.classList.remove('power-on');
+            bootScreen.style.display = 'flex';
+            if (message !== null) bootText.innerHTML = message;
+
+            if (emulatorInstance) {
+                const instance = emulatorInstance;
+                emulatorInstance = null;
+                try { await instance.exit(); } catch (e) { console.warn('Exit error:', e); }
+            }
+
+            if (resetSurface) resetVideoSurface();
+        }
+
         // ================================================================
         // POWER ON / OFF
         // ================================================================
@@ -778,29 +812,30 @@
                 // === POWER ON ===
                 isPowerOn = true;
                 gameboyConsole.classList.add('power-on');
+                document.getElementById('bootScreen').style.display = 'flex';
                 bootText.innerHTML = "NINTENDO<br><br>Memuat Core...";
                 try {
+                    const freshCanvas = resetVideoSurface();
                     emulatorInstance = await Nostalgist.launch({
                         core: 'mgba',
                         rom: selectedRomFile,
-                        element: document.getElementById('gameCanvas')
+                        element: freshCanvas
                     });
                     document.getElementById('bootScreen').style.display = 'none';
                 } catch (err) {
+                    if (emulatorInstance) {
+                        try { await emulatorInstance.exit(); } catch (e) { console.warn('Exit error:', e); }
+                        emulatorInstance = null;
+                    }
+                    resetVideoSurface();
                     bootText.innerHTML = `<span style="color:red">ERROR</span><br><br>${err.message}`;
                     isPowerOn = false;
                     gameboyConsole.classList.remove('power-on');
+                    document.getElementById('bootScreen').style.display = 'flex';
                 }
             } else {
                 // === POWER OFF ===
-                isPowerOn = false;
-                gameboyConsole.classList.remove('power-on');
-                document.getElementById('bootScreen').style.display = 'flex';
-                bootText.innerHTML = "Mati.";
-                if (emulatorInstance) {
-                    try { await emulatorInstance.exit(); } catch (e) { console.warn('Exit error:', e); }
-                    emulatorInstance = null;
-                }
+                await stopEmulator("Mati.", true);
             }
         });
 
@@ -815,18 +850,8 @@
             if (isEjecting) return;
             isEjecting = true;
 
-            // Matikan emulator dulu kalau lagi nyala
-            if (isPowerOn) {
-                const gameboyConsole = document.getElementById('gameboyConsole');
-                isPowerOn = false;
-                gameboyConsole.classList.remove('power-on');
-                document.getElementById('bootScreen').style.display = 'flex';
-                document.getElementById('bootText').innerHTML = "Mati.";
-                if (emulatorInstance) {
-                    try { await emulatorInstance.exit(); } catch (e) { console.warn('Exit error:', e); }
-                    emulatorInstance = null;
-                }
-            }
+            // Matikan emulator dulu kalau lagi nyala dan selalu reset surface video.
+            await stopEmulator("Mati.", true);
 
             selectedRomFile = null;
 
