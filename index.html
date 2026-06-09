@@ -124,32 +124,32 @@
         .logo-area span { color: #555; font-size: 15px; font-style: normal; font-weight: normal; }
         .logo-area .advance-mark { color: var(--text-blue); font-size: 19px; font-style: italic; font-weight: bold; }
         .controls-container { width: 100%; flex: 1; min-height: 300px; position: relative; margin-top: 0; }
-        .d-pad { position: absolute; top: calc(34% - 60px); left: max(12px, calc(24% - 60px)); width: 120px; height: 120px; touch-action: none; filter: drop-shadow(4px 6px 6px rgba(0,0,0,0.35)); }
-        .d-pad-arm { background: linear-gradient(145deg, #343434, #171717); position: absolute; box-shadow: inset 4px 4px 8px rgba(255,255,255,0.08), inset -5px -5px 10px rgba(0,0,0,0.55), 2px 3px 4px rgba(0,0,0,0.35); transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease; }
-        .d-pad-up { width: 40px; height: 48px; left: 40px; top: 0; border-radius: 8px 8px 3px 3px; }
-        .d-pad-down { width: 40px; height: 48px; left: 40px; bottom: 0; border-radius: 3px 3px 8px 8px; }
-        .d-pad-left { width: 48px; height: 40px; left: 0; top: 40px; border-radius: 8px 3px 3px 8px; }
-        .d-pad-right { width: 48px; height: 40px; right: 0; top: 40px; border-radius: 3px 8px 8px 3px; }
-        .d-pad-center { position: absolute; width: 34px; height: 34px; background: radial-gradient(circle at 35% 30%, #292929, #101010 70%); border-radius: 50%; top: 43px; left: 43px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.06), inset -3px -3px 8px rgba(0,0,0,0.65); transition: transform 0.08s ease, box-shadow 0.08s ease; }
-        .d-pad.active-up .d-pad-up { transform: translateY(2px); }
-        .d-pad.active-down .d-pad-down { transform: translateY(-2px); }
-        .d-pad.active-left .d-pad-left { transform: translateX(2px); }
-        .d-pad.active-right .d-pad-right { transform: translateX(-2px); }
-        .d-pad.active-up .d-pad-up, .d-pad.active-down .d-pad-down, .d-pad.active-left .d-pad-left, .d-pad.active-right .d-pad-right { background: linear-gradient(145deg, #232323, #0d0d0d); box-shadow: inset 6px 6px 12px rgba(0,0,0,0.62), inset -2px -2px 5px rgba(255,255,255,0.06), 1px 2px 3px rgba(0,0,0,0.25); }
-        .d-pad.active-up .d-pad-center, .d-pad.active-down .d-pad-center, .d-pad.active-left .d-pad-center, .d-pad.active-right .d-pad-center { transform: scale(0.94); box-shadow: inset 5px 5px 10px rgba(0,0,0,0.72); }
+        .d-pad { position: absolute; top: calc(34% - 58px); left: max(10px, calc(23% - 58px)); width: 116px; height: 116px; touch-action: none; filter: drop-shadow(4px 7px 6px rgba(0,0,0,0.34)); }
+        .d-pad::before { content: ''; position: absolute; inset: 37px; background: linear-gradient(145deg, #262626, #111); border-radius: 4px; box-shadow: inset 3px 3px 6px rgba(255,255,255,0.05), inset -4px -4px 8px rgba(0,0,0,0.5); z-index: 2; }
+        .d-pad-arm { background: linear-gradient(145deg, #262626 0%, #151515 62%, #0c0c0c 100%); position: absolute; box-shadow: inset 4px 4px 7px rgba(255,255,255,0.075), inset -5px -5px 10px rgba(0,0,0,0.52), 2px 4px 5px rgba(0,0,0,0.32); transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease; z-index: 1; }
+        .d-pad-up { width: 38px; height: 50px; left: 39px; top: 0; border-radius: 8px 8px 2px 2px; }
+        .d-pad-down { width: 38px; height: 50px; left: 39px; bottom: 0; border-radius: 2px 2px 8px 8px; }
+        .d-pad-left { width: 50px; height: 38px; left: 0; top: 39px; border-radius: 8px 2px 2px 8px; }
+        .d-pad-right { width: 50px; height: 38px; right: 0; top: 39px; border-radius: 2px 8px 8px 2px; }
+        .d-pad-center { position: absolute; width: 34px; height: 34px; background: radial-gradient(circle at 35% 28%, #2a2a31, #16161b 65%, #101014); border-radius: 50%; top: 41px; left: 41px; box-shadow: inset 2px 2px 4px rgba(255,255,255,0.05), inset -4px -4px 8px rgba(0,0,0,0.62), 1px 2px 3px rgba(0,0,0,0.35); transition: transform 0.08s ease, box-shadow 0.08s ease; z-index: 3; }
+        .d-pad.active-up .d-pad-up,
+        .d-pad.active-down .d-pad-down,
+        .d-pad.active-left .d-pad-left,
+        .d-pad.active-right .d-pad-right { transform: none; }
+        .d-pad.active-up .d-pad-up, .d-pad.active-down .d-pad-down, .d-pad.active-left .d-pad-left, .d-pad.active-right .d-pad-right { background: linear-gradient(145deg, #1d1d1d, #090909); box-shadow: inset 5px 5px 10px rgba(0,0,0,0.62), inset -2px -2px 4px rgba(255,255,255,0.045), 1px 2px 3px rgba(0,0,0,0.22); }
         .d-hitbox { position: absolute; z-index: 10; cursor: pointer; }
         .d-up { top: -10px; left: 30px; width: 60px; height: 60px; }
         .d-down { bottom: -10px; left: 30px; width: 60px; height: 60px; }
         .d-left { top: 30px; left: -10px; width: 60px; height: 60px; }
         .d-right { top: 30px; right: -10px; width: 60px; height: 60px; }
 
-        .action-buttons { position: absolute; top: calc(39% - 76px); left: min(calc(100% - 160px), calc(73% - 75px)); width: 150px; height: 160px; transform: rotate(-25deg); transform-origin: center; pointer-events: none; }
-        .btn { width: 55px; height: 55px; background-color: var(--btn-color); border-radius: 50%; position: absolute; box-shadow: inset 3px 3px 8px rgba(255,255,255,0.3), inset -3px -3px 8px rgba(0,0,0,0.5), 2px 4px 6px rgba(0,0,0,0.3); cursor: pointer; }
+        .action-buttons { position: absolute; top: calc(39% - 46px); left: min(calc(100% - 182px), calc(75% - 86px)); width: 172px; height: 116px; transform: none; transform-origin: center; pointer-events: none; }
+        .btn { width: 58px; height: 58px; background: radial-gradient(circle at 35% 28%, #c90768 0%, #ad0759 44%, #7e083e 100%); border-radius: 50%; position: absolute; box-shadow: inset 4px 5px 8px rgba(255,255,255,0.25), inset -5px -6px 10px rgba(0,0,0,0.45), 2px 5px 7px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease; }
         .action-buttons .btn { pointer-events: auto; }
-        .btn:active, .btn.active { transform: scale(0.95); box-shadow: inset 5px 5px 10px rgba(0,0,0,0.6); }
-        .btn-b { left: 14px; top: 92px; }
-        .btn-a { right: 14px; top: 18px; }
-        .btn-label { position: absolute; color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 18px; bottom: -25px; right: 15px; }
+        .btn:active, .btn.active { transform: scale(0.94); background: radial-gradient(circle at 42% 38%, #a70653 0%, #850541 100%); box-shadow: inset 7px 8px 13px rgba(0,0,0,0.62), inset -2px -2px 5px rgba(255,255,255,0.12), 1px 2px 4px rgba(0,0,0,0.22); }
+        .btn-b { left: 18px; top: 50px; }
+        .btn-a { right: 16px; top: 6px; }
+        .btn-label { position: absolute; color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 22px; line-height: 1; bottom: -27px; right: -2px; transform: rotate(-18deg); text-shadow: 0 1px 0 rgba(255,255,255,0.22); }
 
         .system-buttons { position: absolute; top: calc(77% - 20px); left: 42%; display: flex; gap: 20px; transform: translateX(-50%) rotate(-25deg); }
         .sys-btn-wrapper { display: flex; flex-direction: column; align-items: center; }
@@ -165,11 +165,12 @@
         .game-settings-panel { width: 100%; max-width: 330px; background: #2a2a35; border-radius: 12px; padding: 20px; color: white; box-shadow: 0 12px 28px rgba(0,0,0,0.65); }
         .game-settings-panel h3 { margin: 0 0 16px; font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--btn-color); line-height: 1.5; }
         .game-settings-action { width: 100%; min-height: 46px; border: none; border-radius: 8px; background: #4CAF50; color: white; font-weight: bold; font-size: 14px; cursor: pointer; margin-bottom: 10px; }
+        .game-settings-action.load { background: #3f66d6; }
         .game-settings-action:disabled { opacity: 0.55; cursor: not-allowed; }
         .game-settings-status { min-height: 18px; color: #b8b8c8; font-size: 11px; line-height: 1.4; margin: 4px 0 14px; }
         .game-settings-close { width: 100%; min-height: 42px; border: none; border-radius: 8px; background: #555; color: white; font-weight: bold; cursor: pointer; }
 
-        @media (max-height: 700px) { .screen-container { padding: 12px 14px 16px; } .screen { width: min(82%, 320px); } .d-pad { transform: scale(0.9); transform-origin: center; } .action-buttons { transform: scale(0.92) rotate(-25deg); transform-origin: center; } .system-buttons { top: calc(78% - 20px); left: 42%; transform: translateX(-50%) scale(0.9) rotate(-25deg); } .game-settings-btn { transform: scale(0.9); transform-origin: center; } }
+        @media (max-height: 700px) { .screen-container { padding: 12px 14px 16px; } .screen { width: min(82%, 320px); } .d-pad { transform: scale(0.9); transform-origin: center; } .action-buttons { transform: scale(0.92); transform-origin: center; } .system-buttons { top: calc(78% - 20px); left: 42%; transform: translateX(-50%) scale(0.9) rotate(-25deg); } .game-settings-btn { transform: scale(0.9); transform-origin: center; } }
     </style>
 </head>
 <body>
@@ -269,6 +270,7 @@
         <div class="game-settings-panel">
             <h3>GAME SETTINGS</h3>
             <button class="game-settings-action" id="btnSaveState" disabled>Save State</button>
+            <button class="game-settings-action load" id="btnLoadState" disabled>Load State</button>
             <div class="game-settings-status" id="gameSettingsStatus">Power ON game terlebih dahulu untuk menyimpan state.</div>
             <button class="game-settings-close" id="btnCloseGameSettings">Tutup</button>
         </div>
@@ -672,6 +674,16 @@
             });
         }
 
+        function getStateRecord(romId) {
+            return new Promise((resolve, reject) => {
+                const req = db.transaction([SAVE_STATE_STORE], "readonly")
+                    .objectStore(SAVE_STATE_STORE)
+                    .get(romId);
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = (e) => reject(e.target.error);
+            });
+        }
+
         // ================================================================
         // STATE & UI ELEMENTS
         // ================================================================
@@ -691,6 +703,8 @@
         const gameSettingsModal = document.getElementById('gameSettingsModal');
         const gameSettingsStatus = document.getElementById('gameSettingsStatus');
         const btnSaveState = document.getElementById('btnSaveState');
+        const btnLoadState = document.getElementById('btnLoadState');
+        let gameSettingsRefreshId = 0;
 
         function hasLogoAsset(rom) {
             return Boolean(rom.coverUrl && (rom.assetType === 'logo' || /\/logo\//i.test(rom.coverUrl)));
@@ -893,12 +907,44 @@
             }, 600);
         }
 
-        function updateGameSettingsStatus() {
-            const canSave = Boolean(isPowerOn && emulatorInstance && selectedRomMeta);
-            btnSaveState.disabled = !canSave;
-            gameSettingsStatus.innerText = canSave
-                ? 'Siap menyimpan state untuk kaset ini.'
-                : 'Power ON game terlebih dahulu untuk menyimpan state.';
+        function canUseStateActions() {
+            return Boolean(isPowerOn && emulatorInstance && selectedRomMeta);
+        }
+
+        async function updateGameSettingsStatus(forcedMessage = null) {
+            const refreshId = ++gameSettingsRefreshId;
+            const canUse = canUseStateActions();
+            btnSaveState.disabled = !canUse;
+            btnLoadState.disabled = true;
+
+            if (forcedMessage) {
+                gameSettingsStatus.innerText = forcedMessage;
+                return;
+            }
+
+            if (!canUse) {
+                gameSettingsStatus.innerText = 'Power ON game terlebih dahulu untuk save/load state.';
+                return;
+            }
+
+            gameSettingsStatus.innerText = 'Mengecek save state...';
+            try {
+                const record = await getStateRecord(selectedRomMeta.id);
+                if (refreshId !== gameSettingsRefreshId) return;
+
+                const hasState = Boolean(record && record.state);
+                btnLoadState.disabled = !hasState;
+                if (hasState) {
+                    const savedAt = new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    gameSettingsStatus.innerText = `Save tersedia (${savedAt}).`;
+                } else {
+                    gameSettingsStatus.innerText = 'Belum ada save state untuk kaset ini.';
+                }
+            } catch (err) {
+                console.error('Load state status error:', err);
+                if (refreshId !== gameSettingsRefreshId) return;
+                gameSettingsStatus.innerText = 'Gagal membaca save state.';
+            }
         }
 
         document.getElementById('btnGameSettings').onclick = () => {
@@ -915,10 +961,13 @@
         });
 
         btnSaveState.onclick = async () => {
-            updateGameSettingsStatus();
-            if (btnSaveState.disabled) return;
+            if (!canUseStateActions()) {
+                await updateGameSettingsStatus();
+                return;
+            }
 
             btnSaveState.disabled = true;
+            btnLoadState.disabled = true;
             gameSettingsStatus.innerText = 'Menyimpan state...';
             try {
                 const stateResult = await emulatorInstance.saveState();
@@ -931,7 +980,36 @@
                 gameSettingsStatus.innerText = 'Gagal menyimpan state.';
                 showToast('Gagal menyimpan state.');
             } finally {
-                btnSaveState.disabled = !(isPowerOn && emulatorInstance && selectedRomMeta);
+                await updateGameSettingsStatus();
+            }
+        };
+
+        btnLoadState.onclick = async () => {
+            if (!canUseStateActions()) {
+                await updateGameSettingsStatus();
+                return;
+            }
+
+            btnSaveState.disabled = true;
+            btnLoadState.disabled = true;
+            gameSettingsStatus.innerText = 'Memuat state...';
+            try {
+                const record = await getStateRecord(selectedRomMeta.id);
+                if (!record || !record.state) {
+                    gameSettingsStatus.innerText = 'Belum ada save state untuk kaset ini.';
+                    return;
+                }
+
+                await emulatorInstance.loadState(record.state);
+                const savedAt = new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                gameSettingsStatus.innerText = `State dimuat (${savedAt}).`;
+                showToast('State dimuat.');
+            } catch (err) {
+                console.error('Load state error:', err);
+                gameSettingsStatus.innerText = 'Gagal memuat state.';
+                showToast('Gagal memuat state.');
+            } finally {
+                await updateGameSettingsStatus();
             }
         };
 
