@@ -110,13 +110,14 @@
         .l-r-btn.active { background: #777; }
 
         .screen-container { background-color: var(--screen-bg); width: 92%; height: auto; margin-top: 6px; border-radius: 10px 10px 40px 10px; padding: 14px 16px 18px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; flex: none; }
-        .screen-top-text { color: #b8b6bf; font-size: 10px; width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .screen-top-text { color: #b8b6bf; font-size: 10px; width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px; padding-left: 84px; box-sizing: border-box; }
+        .screen-top-text .screen-lines:first-child { width: 20px; opacity: 0.52; }
         .screen-lines { width: 30px; height: 8px; border-top: 2px solid #b8b6bf; border-bottom: 2px solid #2a2082; }
         .screen { background-color: var(--screen-color); width: min(84%, 340px); aspect-ratio: 3 / 2; height: auto; flex: none; box-shadow: inset 5px 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; border-radius: 3px; }
         canvas { width: 100% !important; height: 100% !important; object-fit: contain !important; image-rendering: pixelated; display: block; opacity: 0; transition: opacity 0.5s; }
         .console.power-on canvas { opacity: 1; }
 
-        .battery { position: absolute; left: 14px; top: 13px; transform: none; display: flex; flex-direction: row; align-items: center; gap: 5px; z-index: 4; }
+        .battery { position: absolute; left: 14px; top: 13px; transform: none; display: flex; flex-direction: row; align-items: center; gap: 5px; z-index: 4; padding: 2px 5px; border-radius: 999px; background: rgba(65,65,78,0.78); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 2px 4px rgba(0,0,0,0.2); }
         .battery-led { width: 10px; height: 10px; background-color: #551111; border-radius: 50%; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); }
         .console.power-on .battery-led { background-color: #ff3333; box-shadow: 0 0 8px #ff3333; }
         .battery-text { color: #b8b6bf; font-size: 8px; margin-top: 0; }
@@ -148,12 +149,16 @@
         .d-right { top: 30px; right: -10px; width: 60px; height: 60px; }
 
         .action-buttons { position: absolute; top: calc(39% - 46px); left: min(calc(100% - 182px), calc(75% - 86px)); width: 172px; height: 116px; transform: none; transform-origin: center; pointer-events: none; overflow: visible; }
-        .btn { width: 58px; height: 58px; background: radial-gradient(circle at 35% 28%, #c90768 0%, #ad0759 44%, #7e083e 100%); border-radius: 50%; position: absolute; box-shadow: inset 4px 5px 8px rgba(255,255,255,0.25), inset -5px -6px 10px rgba(0,0,0,0.45), 2px 5px 7px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease; transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); transform-origin: center; }
+        .btn { width: 58px; height: 58px; background: transparent; border-radius: 50%; position: absolute; box-shadow: none; cursor: pointer; transition: transform 0.08s ease; transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); transform-origin: center; }
         .action-buttons .btn { pointer-events: auto; }
         .btn:active, .btn.active { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(var(--ctrl-scale) * 0.94)); background: radial-gradient(circle at 42% 38%, #a70653 0%, #850541 100%); box-shadow: inset 7px 8px 13px rgba(0,0,0,0.62), inset -2px -2px 5px rgba(255,255,255,0.12), 1px 2px 4px rgba(0,0,0,0.22); }
         .btn-b { left: 18px; top: 50px; }
         .btn-a { right: 16px; top: 6px; }
-        .btn-label { position: absolute; color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 22px; line-height: 1; bottom: -27px; right: -2px; transform: rotate(-18deg); text-shadow: 0 1px 0 rgba(255,255,255,0.22); }
+        .btn::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 35% 28%, #c90768 0%, #ad0759 44%, #7e083e 100%); box-shadow: inset 4px 5px 8px rgba(255,255,255,0.25), inset -5px -6px 10px rgba(0,0,0,0.45), 2px 5px 7px rgba(0,0,0,0.3); transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease; }
+        .btn:active, .btn.active { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); background: transparent; box-shadow: none; }
+        .btn:active::before, .btn.active::before { transform: scale(0.94); background: radial-gradient(circle at 42% 38%, #a70653 0%, #850541 100%); box-shadow: inset 7px 8px 13px rgba(0,0,0,0.62), inset -2px -2px 5px rgba(255,255,255,0.12), 1px 2px 4px rgba(0,0,0,0.22); }
+        .btn-label { position: absolute; color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 22px; line-height: 1; bottom: -27px; right: -2px; transform: rotate(-18deg); text-shadow: 0 1px 0 rgba(255,255,255,0.22); pointer-events: none; transform-origin: center; z-index: 1; }
+        .btn:active .btn-label, .btn.active .btn-label { transform: rotate(-18deg); }
 
         .system-buttons { position: absolute; top: calc(77% - 20px); left: 42%; display: flex; gap: 20px; transform: translateX(-50%) rotate(-25deg); }
         .sys-btn-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); transform-origin: center; }
@@ -162,7 +167,7 @@
         .sys-label { color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 14px; margin-top: 5px; }
         .game-settings-btn { position: absolute; left: 9%; top: calc(73% - 18px); width: 38px; height: 38px; border: none; border-radius: 50%; background: linear-gradient(145deg, #a8a8a8, #7d7d7d); color: #333; font-size: 18px; font-weight: bold; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.32), 1px 3px 5px rgba(0,0,0,0.32); cursor: pointer; pointer-events: auto; transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); transform-origin: center; }
         .game-settings-btn:active { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(var(--ctrl-scale) * 0.94)); box-shadow: inset 4px 4px 9px rgba(0,0,0,0.5); }
-        .speaker { position: absolute; bottom: 5%; right: 10%; display: flex; gap: 8px; transform: translate(var(--ctrl-x), var(--ctrl-y)) rotate(-25deg) scale(var(--ctrl-scale)); transform-origin: center; }
+        .speaker { position: absolute; bottom: 5%; right: 10%; display: none; gap: 8px; transform: translate(var(--ctrl-x), var(--ctrl-y)) rotate(-25deg) scale(var(--ctrl-scale)); transform-origin: center; }
         .grill { width: 8px; height: 60px; background-color: #b8b6bf; border-radius: 5px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3); }
 
         .game-settings-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.68); z-index: 120; display: none; justify-content: center; align-items: center; padding: 18px; }
@@ -172,8 +177,8 @@
         .rotate-icon-btn:active { transform: scale(0.94); box-shadow: inset 4px 4px 9px rgba(0,0,0,0.38); }
         .settings-title-block h3 { margin: 0; font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--text-blue); line-height: 1.5; text-shadow: 0 1px 0 rgba(255,255,255,0.35); }
         .settings-mode-chip { display: inline-flex; margin-top: 6px; padding: 5px 9px; border-radius: 999px; background: #3c3b47; color: #dce4f4; font-family: 'Press Start 2P', monospace; font-size: 7px; letter-spacing: 0; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.46); }
-        .settings-screen-panel { background: linear-gradient(180deg, #595967, #373744); border-radius: 12px 12px 28px 12px; padding: 12px; box-shadow: inset 0 0 12px rgba(0,0,0,0.62); }
-        .settings-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 10px; }
+        .settings-screen-panel { background: linear-gradient(180deg, #595967, #373744); border-radius: 12px 12px 28px 12px; padding: 12px; box-shadow: inset 0 0 12px rgba(0,0,0,0.62); max-height: min(64vh, 470px); overflow-y: auto; scrollbar-width: thin; }
+        .settings-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 10px; }
         .settings-tab { min-height: 32px; border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; background: #2d2d39; color: #cfd2dc; font-family: 'Press Start 2P', monospace; font-size: 7px; cursor: pointer; box-shadow: inset 1px 1px 3px rgba(255,255,255,0.08), inset -2px -2px 4px rgba(0,0,0,0.32); }
         .settings-tab.active { background: #8bc34a; color: #10130f; border-color: #b8e785; }
         .settings-page { display: none; min-height: 148px; }
@@ -187,6 +192,30 @@
         .mini-settings-btn[aria-pressed="true"] { background: #8bc34a; color: #10130f; }
         .mini-settings-btn.danger { background: #8d3945; }
         .game-settings-status { min-height: 22px; color: #d7d9e4; font-size: 11px; line-height: 1.45; margin: 3px 0 0; }
+        .save-slot-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .save-slot-card { min-width: 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: #2d2d39; padding: 7px; box-shadow: inset 1px 1px 3px rgba(255,255,255,0.07), inset -2px -2px 5px rgba(0,0,0,0.32); }
+        .save-slot-title { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: #dce4f4; font-family: 'Press Start 2P', monospace; font-size: 7px; margin-bottom: 6px; }
+        .save-slot-time { color: #8bc34a; font-family: sans-serif; font-size: 9px; white-space: nowrap; }
+        .save-thumb { width: 100%; aspect-ratio: 3 / 2; border-radius: 5px; background: #15161b; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 0 8px rgba(0,0,0,0.7); color: #687080; font-family: 'Press Start 2P', monospace; font-size: 7px; text-align: center; line-height: 1.5; }
+        .save-thumb img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; display: block; }
+        .save-slot-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 7px; }
+        .slot-action { min-height: 30px; border: none; border-radius: 6px; background: #4a4a58; color: #fff; font-weight: bold; font-size: 10px; cursor: pointer; box-shadow: inset 1px 1px 3px rgba(255,255,255,0.13), inset -2px -2px 4px rgba(0,0,0,0.32); }
+        .slot-action.save { background: #347f39; }
+        .slot-action.load { background: #304aa8; }
+        .slot-action:disabled { opacity: 0.48; cursor: not-allowed; }
+        .cheat-summary { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 8px; margin-bottom: 9px; border-radius: 8px; background: #2d2d39; color: #dce4f4; font-size: 11px; }
+        .cheat-summary strong { color: #8bc34a; font-family: 'Press Start 2P', monospace; font-size: 7px; }
+        .cheat-list { display: grid; gap: 7px; max-height: 132px; overflow-y: auto; margin-bottom: 9px; padding-right: 2px; }
+        .cheat-row { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 7px; border-radius: 8px; background: #30303d; padding: 7px; color: #dce4f4; font-size: 11px; }
+        .cheat-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #8bc34a; }
+        .cheat-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; }
+        .cheat-code-preview { color: #aab0bd; font-family: monospace; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+        .cheat-icon-btn { width: 30px; height: 30px; border: none; border-radius: 7px; background: #4a4a58; color: #fff; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .cheat-icon-btn.danger { background: #8d3945; }
+        .cheat-form { display: grid; gap: 7px; }
+        .cheat-input, .cheat-code-input { width: 100%; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; background: #17171f; color: #dce4f4; padding: 9px; outline: none; font-size: 12px; }
+        .cheat-code-input { min-height: 72px; resize: vertical; font-family: monospace; line-height: 1.35; }
+        .cheat-input:focus, .cheat-code-input:focus { border-color: #8bc34a; box-shadow: 0 0 0 2px rgba(139,195,74,0.18); }
         .display-readout { min-height: 46px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); color: #d7d9e4; font-family: 'Press Start 2P', monospace; font-size: 8px; }
         .display-readout strong { color: #8bc34a; font-size: 10px; }
         .game-settings-close { width: 100%; min-height: 40px; margin-top: 12px; border: none; border-radius: 8px; background: linear-gradient(145deg, #817f89, #53515d); color: white; font-weight: bold; cursor: pointer; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.18), inset -3px -4px 8px rgba(0,0,0,0.28); }
@@ -208,16 +237,16 @@
         body.layout-landscape #console-wrapper { justify-content: center; }
         body.layout-landscape .console { width: 100%; max-width: none; height: 100%; max-height: none; padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border-radius: 18px; display: grid; grid-template-columns: minmax(178px, 23%) minmax(280px, 1fr) minmax(188px, 23%); grid-template-rows: minmax(42px, 8%) minmax(0, 1fr) minmax(42px, 11%); column-gap: clamp(8px, 2%, 22px); overflow: hidden; container-type: size; }
         body.layout-landscape .console::before,
-        body.layout-landscape .console::after { content: ''; position: absolute; top: 50%; width: 54px; width: clamp(32px, 6cqw, 72px); height: 190px; height: clamp(120px, 42cqh, 260px); transform: translateY(-50%); border-radius: 999px; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.18) 5px 11px); opacity: 0.42; pointer-events: none; }
+        body.layout-landscape .console::after { display: none; }
         body.layout-landscape .console::before { left: clamp(82px, 16cqw, 190px); }
         body.layout-landscape .console::after { right: clamp(82px, 16cqw, 190px); }
         body.layout-landscape .power-section { grid-column: 1 / 4; grid-row: 1; width: auto; min-height: 0; padding: 0 clamp(8px, 2cqw, 18px); z-index: 7; align-self: center; }
         body.layout-landscape .power-text { font-size: clamp(8px, 2cqh, 10px); }
         body.layout-landscape .eject-btn { padding: 7px 11px; }
         body.layout-landscape .screen-container { grid-column: 2; grid-row: 2; align-self: center; justify-self: center; width: min(100%, 62cqw, calc((100cqh - 108px) * 1.48), 820px); max-width: 100%; margin: 0; padding: clamp(10px, 2.4cqh, 16px) clamp(12px, 2.2cqw, 22px) clamp(12px, 2.8cqh, 20px); border-radius: 16px 16px 34px 16px; z-index: 2; }
-        body.layout-landscape .screen-top-text { font-size: clamp(7px, 1.8cqh, 10px); margin-bottom: clamp(5px, 1.2cqh, 8px); }
+        body.layout-landscape .screen-top-text { font-size: clamp(7px, 1.8cqh, 10px); margin-bottom: clamp(5px, 1.2cqh, 8px); padding-left: 0; padding-right: 86px; }
         body.layout-landscape .screen { width: min(94%, 760px); }
-        body.layout-landscape .battery { left: auto; right: clamp(10px, 2cqw, 18px); top: clamp(9px, 2cqh, 14px); }
+        body.layout-landscape .battery { left: auto; right: clamp(10px, 2cqw, 18px); top: clamp(10px, 2.4cqh, 16px); }
         body.layout-landscape .top-grooves { position: absolute; inset: 0; width: 100%; min-height: 0; margin: 0; padding: 0; display: block; z-index: 5; pointer-events: none; }
         body.layout-landscape .l-r-btn { position: absolute; top: clamp(50px, 9cqh, 78px); width: clamp(62px, 11cqw, 88px); height: clamp(24px, 5.4cqh, 34px); font-size: clamp(14px, 3cqh, 18px); pointer-events: auto; }
         body.layout-landscape #btn-l { left: clamp(18px, 6cqw, 88px); }
@@ -234,7 +263,7 @@
         body.layout-landscape .system-start { right: clamp(196px, 29cqw, 350px); }
         body.layout-landscape .game-settings-btn { left: clamp(18px, 5cqw, 62px); top: auto; bottom: clamp(28px, 8cqh, 66px); transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); z-index: 6; pointer-events: auto; }
         body.layout-landscape .game-settings-btn:active { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(var(--ctrl-scale) * 0.94)); }
-        body.layout-landscape .speaker { right: clamp(18px, 4cqw, 54px); bottom: clamp(26px, 8cqh, 62px); transform: translate(var(--ctrl-x), var(--ctrl-y)) rotate(-90deg) scale(var(--ctrl-scale)); gap: 6px; z-index: 4; }
+        body.layout-landscape .speaker { display: none; right: clamp(18px, 4cqw, 54px); bottom: clamp(26px, 8cqh, 62px); transform: translate(var(--ctrl-x), var(--ctrl-y)) rotate(-90deg) scale(var(--ctrl-scale)); gap: 6px; z-index: 4; }
         body.layout-landscape .grill { height: clamp(40px, 12cqh, 64px); }
 
         @media (max-height: 430px) {
@@ -282,6 +311,7 @@
         <div class="context-menu" id="contextMenu">
             <div class="context-title" id="contextTitle">Opsi Kaset</div>
             <button class="context-btn" id="btnFetchCover">🔄 Unduh Ulang Logo</button>
+            <button class="context-btn" id="btnManageCartCheats">CHEAT Kaset</button>
             <button class="context-btn danger" id="btnDeleteCart">🗑️ Hapus Kaset</button>
             <button class="context-btn" id="btnCancelContext">Batal</button>
         </div>
@@ -361,11 +391,11 @@
                 <div class="settings-tabs" role="tablist" aria-label="Game settings sections">
                     <button class="settings-tab active" type="button" data-settings-tab="save" role="tab" aria-selected="true">SAVE</button>
                     <button class="settings-tab" type="button" data-settings-tab="controls" role="tab" aria-selected="false">CTRL</button>
+                    <button class="settings-tab" type="button" data-settings-tab="cheats" role="tab" aria-selected="false">CHEAT</button>
                     <button class="settings-tab" type="button" data-settings-tab="display" role="tab" aria-selected="false">VIEW</button>
                 </div>
                 <div class="settings-page active" id="settingsPageSave" data-settings-page="save">
-                    <button class="game-settings-action" id="btnSaveState" disabled>Save State</button>
-                    <button class="game-settings-action load" id="btnLoadState" disabled>Load State</button>
+                    <div class="save-slot-grid" id="saveSlotGrid"></div>
                     <div class="game-settings-status" id="gameSettingsStatus">Power ON game terlebih dahulu untuk menyimpan state.</div>
                 </div>
                 <div class="settings-page" id="settingsPageControls" data-settings-page="controls">
@@ -375,6 +405,22 @@
                         <button class="mini-settings-btn danger" id="btnResetControls" type="button">Reset Layout</button>
                     </div>
                     <div class="game-settings-status" id="controllerSettingsStatus">CUSTOM: OFF</div>
+                </div>
+                <div class="settings-page" id="settingsPageCheats" data-settings-page="cheats">
+                    <div class="cheat-summary">
+                        <div><strong id="cheatRomLabel">NO CART</strong><div id="cheatCountLabel">0 cheat aktif</div></div>
+                        <button class="mini-settings-btn" id="btnApplyCheats" type="button">Apply</button>
+                    </div>
+                    <div class="cheat-list" id="cheatList"></div>
+                    <div class="cheat-form">
+                        <input class="cheat-input" id="cheatNameInput" type="text" placeholder="Nama cheat">
+                        <textarea class="cheat-code-input" id="cheatCodeInput" placeholder="Kode cheat, satu baris atau beberapa baris"></textarea>
+                        <div class="settings-control-row">
+                            <button class="mini-settings-btn" id="btnSaveCheat" type="button">Save Cheat</button>
+                            <button class="mini-settings-btn danger" id="btnClearCheatForm" type="button">Clear</button>
+                        </div>
+                    </div>
+                    <div class="game-settings-status" id="cheatSettingsStatus">Pilih kaset untuk mengatur cheat.</div>
                 </div>
                 <div class="settings-page" id="settingsPageDisplay" data-settings-page="display">
                     <div class="display-readout"><span>RATIO</span><strong>3:2</strong></div>
@@ -778,17 +824,52 @@
             });
         }
 
-        function saveStateRecord(rom, stateResult) {
+        function normalizeSaveRecord(record) {
+            if (!record) return null;
+            if (record.slots && typeof record.slots === 'object') return record;
+
+            if (record.state) {
+                return {
+                    romId: record.romId,
+                    romName: record.romName,
+                    slots: {
+                        "1": {
+                            state: record.state,
+                            thumbnail: record.thumbnail || null,
+                            timestamp: record.timestamp || Date.now()
+                        }
+                    },
+                    timestamp: record.timestamp || Date.now()
+                };
+            }
+
+            return {
+                romId: record.romId,
+                romName: record.romName,
+                slots: {},
+                timestamp: record.timestamp || Date.now()
+            };
+        }
+
+        async function saveStateRecord(rom, slot, stateResult) {
+            const existing = normalizeSaveRecord(await getStateRecord(rom.id)) || {
+                romId: rom.id,
+                romName: rom.originalFileName || rom.name,
+                slots: {}
+            };
+            const slotKey = String(slot);
+            existing.romName = rom.originalFileName || rom.name;
+            existing.slots[slotKey] = {
+                state: stateResult.state,
+                thumbnail: stateResult.thumbnail || captureGameThumbnail(),
+                timestamp: Date.now()
+            };
+            existing.timestamp = Date.now();
+
             return new Promise((resolve, reject) => {
                 const req = db.transaction([SAVE_STATE_STORE], "readwrite")
                     .objectStore(SAVE_STATE_STORE)
-                    .put({
-                        romId: rom.id,
-                        romName: rom.originalFileName || rom.name,
-                        state: stateResult.state,
-                        thumbnail: stateResult.thumbnail || null,
-                        timestamp: Date.now()
-                    });
+                    .put(existing);
                 req.onsuccess = () => resolve();
                 req.onerror = (e) => reject(e.target.error);
             });
@@ -799,7 +880,7 @@
                 const req = db.transaction([SAVE_STATE_STORE], "readonly")
                     .objectStore(SAVE_STATE_STORE)
                     .get(romId);
-                req.onsuccess = () => resolve(req.result || null);
+                req.onsuccess = () => resolve(normalizeSaveRecord(req.result || null));
                 req.onerror = (e) => reject(e.target.error);
             });
         }
@@ -812,6 +893,10 @@
         let selectedRomMeta = null;
         let isPowerOn = false;
         let activeContextRom = null;
+        let activeCheatRom = null;
+        let editingCheatId = null;
+        const CHEAT_STORAGE_KEY = 'gbaCheatsV1';
+        let cheatStore = loadCheatStore();
 
         const libraryView = document.getElementById('library-view');
         const cartridgeGrid = document.getElementById('cartridgeGrid');
@@ -822,11 +907,20 @@
         const contextMenu = document.getElementById('contextMenu');
         const gameSettingsModal = document.getElementById('gameSettingsModal');
         const gameSettingsStatus = document.getElementById('gameSettingsStatus');
-        const btnSaveState = document.getElementById('btnSaveState');
-        const btnLoadState = document.getElementById('btnLoadState');
+        const saveSlotGrid = document.getElementById('saveSlotGrid');
+        const btnManageCartCheats = document.getElementById('btnManageCartCheats');
         const btnRotateLayout = document.getElementById('btnRotateLayout');
         const layoutModeLabel = document.getElementById('layoutModeLabel');
         const displayLayoutReadout = document.getElementById('displayLayoutReadout');
+        const cheatRomLabel = document.getElementById('cheatRomLabel');
+        const cheatCountLabel = document.getElementById('cheatCountLabel');
+        const cheatList = document.getElementById('cheatList');
+        const cheatNameInput = document.getElementById('cheatNameInput');
+        const cheatCodeInput = document.getElementById('cheatCodeInput');
+        const btnSaveCheat = document.getElementById('btnSaveCheat');
+        const btnClearCheatForm = document.getElementById('btnClearCheatForm');
+        const btnApplyCheats = document.getElementById('btnApplyCheats');
+        const cheatSettingsStatus = document.getElementById('cheatSettingsStatus');
         const btnToggleCustomizer = document.getElementById('btnToggleCustomizer');
         const btnSettingsGrid = document.getElementById('btnSettingsGrid');
         const btnResetControls = document.getElementById('btnResetControls');
@@ -839,7 +933,10 @@
         const btnEditorGrid = document.getElementById('btnEditorGrid');
         const btnEditorReset = document.getElementById('btnEditorReset');
         const btnEditorDone = document.getElementById('btnEditorDone');
+        const SAVE_SLOT_COUNT = 3;
         let gameSettingsRefreshId = 0;
+        let latestSaveRecord = null;
+        let saveActionBusy = false;
         const LAYOUT_MODE_KEY = 'gbaLayoutMode';
         let layoutMode = localStorage.getItem(LAYOUT_MODE_KEY) === 'landscape' ? 'landscape' : 'portrait';
 
@@ -920,7 +1017,272 @@
             document.querySelectorAll('.settings-page').forEach(page => {
                 page.classList.toggle('active', page.dataset.settingsPage === tabName);
             });
+            if (tabName === 'cheats') renderCheatManager(activeCheatRom || selectedRomMeta || activeContextRom);
         }
+
+        function loadCheatStore() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(CHEAT_STORAGE_KEY) || '{}');
+                return (parsed && typeof parsed === 'object') ? parsed : {};
+            } catch (err) {
+                return {};
+            }
+        }
+
+        function persistCheatStore() {
+            localStorage.setItem(CHEAT_STORAGE_KEY, JSON.stringify(cheatStore));
+        }
+
+        function getCheatRomKey(rom) {
+            return rom ? String(rom.id) : '';
+        }
+
+        function getCheatsForRom(rom) {
+            const key = getCheatRomKey(rom);
+            if (!key) return [];
+            if (!Array.isArray(cheatStore[key])) cheatStore[key] = [];
+            return cheatStore[key];
+        }
+
+        function setCheatsForRom(rom, cheats) {
+            const key = getCheatRomKey(rom);
+            if (!key) return;
+            cheatStore[key] = cheats;
+            persistCheatStore();
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function normalizeCheatCode(code) {
+            return String(code || '')
+                .split(/\r?\n/)
+                .map(line => line.trim())
+                .filter(Boolean)
+                .join('\n');
+        }
+
+        function createCheatId() {
+            return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+        }
+
+        function getEnabledCheats(rom) {
+            return getCheatsForRom(rom).filter(cheat => cheat.enabled && normalizeCheatCode(cheat.code));
+        }
+
+        function renderCheatManager(rom = activeCheatRom) {
+            activeCheatRom = rom || null;
+            const hasRom = Boolean(activeCheatRom);
+            const cheats = hasRom ? getCheatsForRom(activeCheatRom) : [];
+            const activeCount = cheats.filter(cheat => cheat.enabled).length;
+
+            cheatRomLabel.innerText = hasRom ? (activeCheatRom.originalFileName || activeCheatRom.name || 'CART') : 'NO CART';
+            cheatCountLabel.innerText = `${activeCount}/${cheats.length} cheat aktif`;
+            btnApplyCheats.disabled = !hasRom;
+            btnSaveCheat.disabled = !hasRom;
+            cheatNameInput.disabled = !hasRom;
+            cheatCodeInput.disabled = !hasRom;
+
+            if (!hasRom) {
+                cheatList.innerHTML = '<div class="game-settings-status">Tidak ada kaset aktif.</div>';
+                cheatSettingsStatus.innerText = 'Pilih kaset dari library atau pasang kaset terlebih dahulu.';
+                return;
+            }
+
+            cheatList.innerHTML = cheats.length ? cheats.map(cheat => `
+                <div class="cheat-row" data-cheat-id="${escapeHtml(cheat.id)}">
+                    <input type="checkbox" data-cheat-toggle="${escapeHtml(cheat.id)}" ${cheat.enabled ? 'checked' : ''} aria-label="Enable cheat">
+                    <div>
+                        <div class="cheat-name">${escapeHtml(cheat.name || 'Cheat')}</div>
+                        <div class="cheat-code-preview">${escapeHtml(normalizeCheatCode(cheat.code).replace(/\n/g, ' + ') || 'NO CODE')}</div>
+                    </div>
+                    <button class="cheat-icon-btn" type="button" data-cheat-edit="${escapeHtml(cheat.id)}">EDIT</button>
+                    <button class="cheat-icon-btn danger" type="button" data-cheat-delete="${escapeHtml(cheat.id)}">X</button>
+                </div>
+            `).join('') : '<div class="game-settings-status">Belum ada cheat untuk kaset ini.</div>';
+
+            if (!cheatSettingsStatus.innerText || cheatSettingsStatus.innerText.includes('Pilih kaset')) {
+                cheatSettingsStatus.innerText = 'Tambah kode, aktifkan checklist, lalu Apply saat game berjalan.';
+            }
+        }
+
+        function clearCheatForm() {
+            editingCheatId = null;
+            cheatNameInput.value = '';
+            cheatCodeInput.value = '';
+            btnSaveCheat.innerText = 'Save Cheat';
+        }
+
+        function setCheatPendingMessage(rom, actionText = 'Cheat tersimpan.') {
+            const sameRunningRom = rom && selectedRomMeta && String(rom.id) === String(selectedRomMeta.id) && isPowerOn;
+            cheatSettingsStatus.innerText = sameRunningRom
+                ? `${actionText} Tekan Apply untuk restart ringan dan memuat cheat.`
+                : `${actionText} Cheat aktif saat kaset dinyalakan.`;
+        }
+
+        function saveCheatFromForm() {
+            if (!activeCheatRom) {
+                cheatSettingsStatus.innerText = 'Pilih kaset terlebih dahulu.';
+                return;
+            }
+
+            const code = normalizeCheatCode(cheatCodeInput.value);
+            if (!code) {
+                cheatSettingsStatus.innerText = 'Kode cheat masih kosong.';
+                return;
+            }
+
+            const cheats = getCheatsForRom(activeCheatRom);
+            const name = cheatNameInput.value.trim() || `Cheat ${cheats.length + 1}`;
+            if (editingCheatId) {
+                const target = cheats.find(cheat => cheat.id === editingCheatId);
+                if (target) {
+                    target.name = name;
+                    target.code = code;
+                }
+            } else {
+                cheats.push({ id: createCheatId(), name, code, enabled: true });
+            }
+
+            setCheatsForRom(activeCheatRom, cheats);
+            clearCheatForm();
+            renderCheatManager(activeCheatRom);
+            setCheatPendingMessage(activeCheatRom, 'Cheat disimpan.');
+        }
+
+        function editCheat(id) {
+            const cheat = getCheatsForRom(activeCheatRom).find(item => item.id === id);
+            if (!cheat) return;
+            editingCheatId = id;
+            cheatNameInput.value = cheat.name || '';
+            cheatCodeInput.value = cheat.code || '';
+            btnSaveCheat.innerText = 'Update Cheat';
+            cheatSettingsStatus.innerText = 'Edit kode lalu simpan lagi.';
+        }
+
+        function deleteCheat(id) {
+            if (!activeCheatRom) return;
+            const cheats = getCheatsForRom(activeCheatRom).filter(item => item.id !== id);
+            setCheatsForRom(activeCheatRom, cheats);
+            if (editingCheatId === id) clearCheatForm();
+            renderCheatManager(activeCheatRom);
+            setCheatPendingMessage(activeCheatRom, 'Cheat dihapus.');
+        }
+
+        function toggleCheat(id, enabled) {
+            if (!activeCheatRom) return;
+            const cheats = getCheatsForRom(activeCheatRom);
+            const cheat = cheats.find(item => item.id === id);
+            if (!cheat) return;
+            cheat.enabled = enabled;
+            setCheatsForRom(activeCheatRom, cheats);
+            renderCheatManager(activeCheatRom);
+            setCheatPendingMessage(activeCheatRom, enabled ? 'Cheat diaktifkan.' : 'Cheat dimatikan.');
+        }
+
+        function retroArchQuote(value) {
+            return String(value || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        }
+
+        function buildRetroArchCheatFile(cheats) {
+            const lines = [`cheats = "${cheats.length}"`];
+            cheats.forEach((cheat, index) => {
+                const code = normalizeCheatCode(cheat.code).split('\n').join('+');
+                lines.push(`cheat${index}_desc = "${retroArchQuote(cheat.name || `Cheat ${index + 1}`)}"`);
+                lines.push(`cheat${index}_code = "${retroArchQuote(code)}"`);
+                lines.push(`cheat${index}_enable = "true"`);
+            });
+            return `${lines.join('\n')}\n`;
+        }
+
+        function ensureFsDir(FS, dirPath) {
+            if (!FS || !dirPath) return;
+            if (typeof FS.mkdirTree === 'function') {
+                FS.mkdirTree(dirPath);
+                return;
+            }
+
+            dirPath.split('/').filter(Boolean).reduce((current, part) => {
+                const next = `${current}/${part}`;
+                try { FS.mkdir(next); } catch (err) {}
+                return next;
+            }, '');
+        }
+
+        function getCheatLaunchOptions(rom) {
+            const enabledCheats = getEnabledCheats(rom);
+            if (!enabledCheats.length) return {};
+
+            const cheatPath = '/home/web_user/retroarch/userdata/cheats/active-gba.cht';
+            const cheatText = buildRetroArchCheatFile(enabledCheats);
+            return {
+                retroarchConfig: {
+                    cheat_file: cheatPath,
+                    apply_cheats_after_load: 'true',
+                    apply_cheats_after_toggle: 'true'
+                },
+                beforeLaunch: async (launchContext = {}) => {
+                    try {
+                        const FS = launchContext.FS || launchContext.fs || (launchContext.Module && launchContext.Module.FS);
+                        if (!FS) return;
+                        ensureFsDir(FS, '/home/web_user/retroarch/userdata/cheats');
+                        FS.writeFile(cheatPath, cheatText);
+                    } catch (err) {
+                        console.warn('Cheat file write skipped:', err);
+                    }
+                }
+            };
+        }
+
+        async function applyCheatsForActiveRom() {
+            const rom = activeCheatRom || selectedRomMeta;
+            if (!rom) {
+                cheatSettingsStatus.innerText = 'Pilih kaset terlebih dahulu.';
+                return;
+            }
+
+            const sameRunningRom = selectedRomMeta && String(rom.id) === String(selectedRomMeta.id) && isPowerOn;
+            if (!sameRunningRom) {
+                cheatSettingsStatus.innerText = 'Cheat akan aktif saat kaset dinyalakan.';
+                showToast('Cheat siap untuk power ON.');
+                return;
+            }
+
+            cheatSettingsStatus.innerText = 'Restart ringan untuk memuat cheat...';
+            showToast('Memuat ulang cheat...');
+            await stopEmulator('Memuat cheat...', true);
+            setTimeout(() => powerSwitch.click(), 250);
+        }
+
+        function openCheatManager(rom) {
+            activeCheatRom = rom || selectedRomMeta || null;
+            clearCheatForm();
+            renderCheatManager(activeCheatRom);
+            setSettingsTab('cheats');
+            gameSettingsModal.style.display = 'flex';
+        }
+
+        cheatList.addEventListener('change', (e) => {
+            const toggle = e.target.closest('[data-cheat-toggle]');
+            if (toggle) toggleCheat(toggle.dataset.cheatToggle, toggle.checked);
+        });
+
+        cheatList.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('[data-cheat-edit]');
+            const deleteBtn = e.target.closest('[data-cheat-delete]');
+            if (editBtn) editCheat(editBtn.dataset.cheatEdit);
+            if (deleteBtn) deleteCheat(deleteBtn.dataset.cheatDelete);
+        });
+
+        btnSaveCheat.addEventListener('click', saveCheatFromForm);
+        btnClearCheatForm.addEventListener('click', clearCheatForm);
+        btnApplyCheats.addEventListener('click', applyCheatsForActiveRom);
 
         const CONTROLLER_LAYOUT_KEY = 'gbaControllerLayoutsV1';
         const CONTROLLER_GRID_KEY = 'gbaControllerGridMode';
@@ -1223,6 +1585,12 @@
 
         document.getElementById('btnCancelContext').onclick = hideContextMenu;
 
+        btnManageCartCheats.onclick = () => {
+            const romToEdit = activeContextRom;
+            hideContextMenu();
+            openCheatManager(romToEdit);
+        };
+
         document.getElementById('btnDeleteCart').onclick = async () => {
             if (confirm(`Hapus kaset "${activeContextRom.name}" secara permanen?`)) {
                 await deleteROM(activeContextRom.id);
@@ -1335,19 +1703,85 @@
             return Boolean(isPowerOn && emulatorInstance && selectedRomMeta);
         }
 
+        function getSaveSlot(record, slot) {
+            return record && record.slots ? record.slots[String(slot)] || null : null;
+        }
+
+        function formatSlotTime(timestamp) {
+            if (!timestamp) return '--:--';
+            return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function getThumbnailSrc(thumbnail) {
+            if (!thumbnail) return '';
+            if (typeof thumbnail === 'string') return thumbnail;
+            if (thumbnail.dataUrl) return thumbnail.dataUrl;
+            if (thumbnail.url) return thumbnail.url;
+            return '';
+        }
+
+        function captureGameThumbnail() {
+            try {
+                const canvas = document.getElementById('gameCanvas');
+                if (!canvas || !canvas.width || !canvas.height) return null;
+                return canvas.toDataURL('image/png');
+            } catch (err) {
+                console.info('Thumbnail capture skipped:', err);
+                return null;
+            }
+        }
+
+        function normalizeStateResult(stateResult) {
+            if (stateResult && Object.prototype.hasOwnProperty.call(stateResult, 'state')) {
+                return {
+                    state: stateResult.state,
+                    thumbnail: stateResult.thumbnail || captureGameThumbnail()
+                };
+            }
+            return {
+                state: stateResult,
+                thumbnail: captureGameThumbnail()
+            };
+        }
+
+        function renderSaveSlots(record = latestSaveRecord) {
+            latestSaveRecord = record;
+            const canUse = canUseStateActions() && !saveActionBusy;
+            const parts = [];
+
+            for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot += 1) {
+                const data = getSaveSlot(record, slot);
+                const thumb = getThumbnailSrc(data && data.thumbnail);
+                const time = data ? formatSlotTime(data.timestamp) : 'EMPTY';
+                parts.push(`
+                    <div class="save-slot-card">
+                        <div class="save-slot-title"><span>SLOT ${slot}</span><span class="save-slot-time">${time}</span></div>
+                        <div class="save-thumb">${thumb ? `<img src="${thumb}" alt="Slot ${slot} thumbnail">` : '<span>NO<br>SAVE</span>'}</div>
+                        <div class="save-slot-actions">
+                            <button class="slot-action save" type="button" data-save-slot="${slot}" ${canUse ? '' : 'disabled'}>Save</button>
+                            <button class="slot-action load" type="button" data-load-slot="${slot}" ${canUse && data && data.state ? '' : 'disabled'}>Load</button>
+                        </div>
+                    </div>
+                `);
+            }
+
+            saveSlotGrid.innerHTML = parts.join('');
+        }
+
         async function updateGameSettingsStatus(forcedMessage = null) {
             const refreshId = ++gameSettingsRefreshId;
             const canUse = canUseStateActions();
-            btnSaveState.disabled = !canUse;
-            btnLoadState.disabled = true;
 
             if (forcedMessage) {
+                renderSaveSlots(latestSaveRecord);
                 gameSettingsStatus.innerText = forcedMessage;
                 return;
             }
 
-            if (!canUse) {
-                gameSettingsStatus.innerText = 'Power ON game terlebih dahulu untuk save/load state.';
+            if (!selectedRomMeta) {
+                latestSaveRecord = null;
+                renderSaveSlots(null);
+                gameSettingsStatus.innerText = 'Pilih kaset terlebih dahulu untuk save/load state.';
                 return;
             }
 
@@ -1356,23 +1790,29 @@
                 const record = await getStateRecord(selectedRomMeta.id);
                 if (refreshId !== gameSettingsRefreshId) return;
 
-                const hasState = Boolean(record && record.state);
-                btnLoadState.disabled = !hasState;
-                if (hasState) {
-                    const savedAt = new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    gameSettingsStatus.innerText = `Save tersedia (${savedAt}).`;
+                latestSaveRecord = record;
+                renderSaveSlots(record);
+                const filled = Array.from({ length: SAVE_SLOT_COUNT }, (_, index) => getSaveSlot(record, index + 1))
+                    .filter(slot => slot && slot.state).length;
+                if (!canUse) {
+                    gameSettingsStatus.innerText = 'Power ON game terlebih dahulu untuk save/load state.';
+                } else if (filled > 0) {
+                    gameSettingsStatus.innerText = `${filled}/${SAVE_SLOT_COUNT} slot save tersedia.`;
                 } else {
                     gameSettingsStatus.innerText = 'Belum ada save state untuk kaset ini.';
                 }
             } catch (err) {
                 console.error('Load state status error:', err);
                 if (refreshId !== gameSettingsRefreshId) return;
+                renderSaveSlots(null);
                 gameSettingsStatus.innerText = 'Gagal membaca save state.';
             }
         }
 
         document.getElementById('btnGameSettings').onclick = () => {
             refreshControllerEditorUi();
+            activeCheatRom = selectedRomMeta || activeCheatRom;
+            renderCheatManager(activeCheatRom);
             updateGameSettingsStatus();
             gameSettingsModal.style.display = 'flex';
         };
@@ -1385,58 +1825,68 @@
             if (e.target === gameSettingsModal) gameSettingsModal.style.display = 'none';
         });
 
-        btnSaveState.onclick = async () => {
+        async function saveToSlot(slot) {
             if (!canUseStateActions()) {
                 await updateGameSettingsStatus();
                 return;
             }
 
-            btnSaveState.disabled = true;
-            btnLoadState.disabled = true;
-            gameSettingsStatus.innerText = 'Menyimpan state...';
+            saveActionBusy = true;
+            renderSaveSlots(latestSaveRecord);
+            gameSettingsStatus.innerText = `Menyimpan state ke Slot ${slot}...`;
             try {
-                const stateResult = await emulatorInstance.saveState();
-                await saveStateRecord(selectedRomMeta, stateResult);
+                const stateResult = normalizeStateResult(await emulatorInstance.saveState());
+                await saveStateRecord(selectedRomMeta, slot, stateResult);
                 const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                gameSettingsStatus.innerText = `State tersimpan (${time}).`;
-                showToast('State tersimpan.');
+                gameSettingsStatus.innerText = `Slot ${slot} tersimpan (${time}).`;
+                showToast(`Slot ${slot} tersimpan.`);
             } catch (err) {
                 console.error('Save state error:', err);
                 gameSettingsStatus.innerText = 'Gagal menyimpan state.';
                 showToast('Gagal menyimpan state.');
             } finally {
+                saveActionBusy = false;
                 await updateGameSettingsStatus();
             }
-        };
+        }
 
-        btnLoadState.onclick = async () => {
+        async function loadFromSlot(slot) {
             if (!canUseStateActions()) {
                 await updateGameSettingsStatus();
                 return;
             }
 
-            btnSaveState.disabled = true;
-            btnLoadState.disabled = true;
-            gameSettingsStatus.innerText = 'Memuat state...';
+            saveActionBusy = true;
+            renderSaveSlots(latestSaveRecord);
+            gameSettingsStatus.innerText = `Memuat Slot ${slot}...`;
             try {
                 const record = await getStateRecord(selectedRomMeta.id);
-                if (!record || !record.state) {
-                    gameSettingsStatus.innerText = 'Belum ada save state untuk kaset ini.';
+                const slotState = getSaveSlot(record, slot);
+                if (!slotState || !slotState.state) {
+                    gameSettingsStatus.innerText = `Slot ${slot} masih kosong.`;
                     return;
                 }
 
-                await emulatorInstance.loadState(record.state);
-                const savedAt = new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                gameSettingsStatus.innerText = `State dimuat (${savedAt}).`;
-                showToast('State dimuat.');
+                await emulatorInstance.loadState(slotState.state);
+                const savedAt = formatSlotTime(slotState.timestamp);
+                gameSettingsStatus.innerText = `Slot ${slot} dimuat (${savedAt}).`;
+                showToast(`Slot ${slot} dimuat.`);
             } catch (err) {
                 console.error('Load state error:', err);
                 gameSettingsStatus.innerText = 'Gagal memuat state.';
                 showToast('Gagal memuat state.');
             } finally {
+                saveActionBusy = false;
                 await updateGameSettingsStatus();
             }
-        };
+        }
+
+        saveSlotGrid.addEventListener('click', (e) => {
+            const saveBtn = e.target.closest('[data-save-slot]');
+            const loadBtn = e.target.closest('[data-load-slot]');
+            if (saveBtn) saveToSlot(Number(saveBtn.dataset.saveSlot));
+            if (loadBtn) loadFromSlot(Number(loadBtn.dataset.loadSlot));
+        });
 
         function resetVideoSurface() {
             const screenEl = document.querySelector('.screen');
@@ -1493,7 +1943,8 @@
                     emulatorInstance = await Nostalgist.launch({
                         core: 'mgba',
                         rom: selectedRomFile,
-                        element: freshCanvas
+                        element: freshCanvas,
+                        ...getCheatLaunchOptions(selectedRomMeta)
                     });
                     document.getElementById('bootScreen').style.display = 'none';
                     if (gameSettingsModal.style.display === 'flex') updateGameSettingsStatus();
