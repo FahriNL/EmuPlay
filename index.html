@@ -169,8 +169,58 @@
         .game-settings-action:disabled { opacity: 0.55; cursor: not-allowed; }
         .game-settings-status { min-height: 18px; color: #b8b8c8; font-size: 11px; line-height: 1.4; margin: 4px 0 14px; }
         .game-settings-close { width: 100%; min-height: 42px; border: none; border-radius: 8px; background: #555; color: white; font-weight: bold; cursor: pointer; }
+        .rotate-setting { margin: 0 0 14px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.18); }
+        .rotate-setting-title { margin-bottom: 8px; color: #b8b8c8; font-size: 10px; font-weight: bold; letter-spacing: 0; }
+        .rotate-toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .rotate-option { min-height: 38px; border: 1px solid #555; border-radius: 7px; background: #333845; color: #fff; font-size: 11px; font-weight: bold; cursor: pointer; transition: transform 0.12s ease, background 0.18s ease, border-color 0.18s ease; }
+        .rotate-option:active { transform: scale(0.96); }
+        .rotate-option.active { border-color: #8bc34a; background: #8bc34a; color: #11151b; box-shadow: 0 0 0 2px rgba(139,195,74,0.18); }
 
         @media (max-height: 700px) { .screen-container { padding: 12px 14px 16px; } .screen { width: min(82%, 320px); } .d-pad { transform: scale(0.9); transform-origin: center; } .action-buttons { transform: scale(0.92); transform-origin: center; } .system-buttons { top: calc(78% - 20px); left: 42%; transform: translateX(-50%) scale(0.9) rotate(-25deg); } .game-settings-btn { transform: scale(0.9); transform-origin: center; } }
+
+        body.layout-landscape { background: radial-gradient(circle at center, #22232b 0%, #111117 62%, #08080c 100%); }
+        body.layout-landscape #console-wrapper { justify-content: center; }
+        body.layout-landscape .console { width: 100%; max-width: none; height: 100%; max-height: none; padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border-radius: 18px; display: grid; grid-template-columns: minmax(126px, 24%) minmax(280px, 1fr) minmax(146px, 24%); grid-template-rows: minmax(42px, 8%) minmax(0, 1fr) minmax(38px, 10%); column-gap: clamp(4px, 2%, 18px); overflow: hidden; container-type: size; }
+        body.layout-landscape .console::before,
+        body.layout-landscape .console::after { content: ''; position: absolute; top: 50%; width: 54px; width: clamp(32px, 6cqw, 72px); height: 190px; height: clamp(120px, 42cqh, 260px); transform: translateY(-50%); border-radius: 999px; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.18) 5px 11px); opacity: 0.42; pointer-events: none; }
+        body.layout-landscape .console::before { left: clamp(82px, 16cqw, 190px); }
+        body.layout-landscape .console::after { right: clamp(82px, 16cqw, 190px); }
+        body.layout-landscape .power-section { grid-column: 1 / 4; grid-row: 1; width: auto; min-height: 0; padding: 0 clamp(8px, 2cqw, 18px); z-index: 7; align-self: center; }
+        body.layout-landscape .power-text { font-size: clamp(8px, 2cqh, 10px); }
+        body.layout-landscape .eject-btn { padding: 7px 11px; }
+        body.layout-landscape .screen-container { grid-column: 2; grid-row: 2; align-self: center; justify-self: center; width: min(100%, 720px); width: min(54cqw, calc((100cqh - 124px) * 1.45), 760px); max-width: 100%; margin: 0; padding: clamp(10px, 2.4cqh, 16px) clamp(12px, 2.2cqw, 22px) clamp(12px, 2.8cqh, 20px); border-radius: 16px 16px 34px 16px; z-index: 2; }
+        body.layout-landscape .screen-top-text { font-size: clamp(7px, 1.8cqh, 10px); margin-bottom: clamp(5px, 1.2cqh, 8px); }
+        body.layout-landscape .screen { width: min(92%, 700px); }
+        body.layout-landscape .battery { left: clamp(8px, 1.4cqw, 14px); }
+        body.layout-landscape .top-grooves { position: absolute; inset: 0; width: 100%; min-height: 0; margin: 0; padding: 0; display: block; z-index: 5; pointer-events: none; }
+        body.layout-landscape .l-r-btn { position: absolute; top: clamp(50px, 9cqh, 78px); width: clamp(62px, 11cqw, 88px); height: clamp(24px, 5.4cqh, 34px); font-size: clamp(14px, 3cqh, 18px); pointer-events: auto; }
+        body.layout-landscape #btn-l { left: clamp(18px, 6cqw, 88px); }
+        body.layout-landscape #btn-r { right: clamp(18px, 6cqw, 88px); }
+        body.layout-landscape .logo-area { position: absolute; left: 50%; bottom: clamp(7px, 2cqh, 20px); width: min(48cqw, 480px); transform: translateX(-50%); font-size: clamp(17px, 4cqh, 28px); z-index: 1; }
+        body.layout-landscape .logo-area span { font-size: 0.72em; }
+        body.layout-landscape .logo-area .advance-mark { font-size: 0.9em; }
+        body.layout-landscape .controls-container { grid-column: 1 / 4; grid-row: 2 / 4; width: 100%; height: 100%; min-height: 0; margin: 0; position: relative; pointer-events: none; z-index: 4; }
+        body.layout-landscape .d-pad { top: 50%; left: 7%; left: clamp(14px, 8cqw, 96px); transform: translateY(-50%) scale(0.92); transform-origin: center; pointer-events: auto; }
+        body.layout-landscape .action-buttons { top: 50%; left: auto; right: 7%; right: clamp(10px, 7cqw, 94px); transform: translateY(-50%) scale(0.92); transform-origin: center; }
+        body.layout-landscape .system-buttons { top: auto; left: 50%; bottom: 48px; bottom: clamp(36px, 9cqh, 72px); gap: clamp(16px, 3cqw, 32px); transform: translateX(-50%) rotate(0deg) scale(0.92); pointer-events: auto; }
+        body.layout-landscape .game-settings-btn { left: 6%; left: clamp(18px, 6cqw, 76px); top: auto; bottom: 54px; bottom: clamp(32px, 8cqh, 74px); transform: none; z-index: 6; pointer-events: auto; }
+        body.layout-landscape .speaker { right: 5%; right: clamp(18px, 5cqw, 74px); bottom: 48px; bottom: clamp(28px, 8cqh, 68px); transform: rotate(-90deg); gap: 6px; z-index: 4; }
+        body.layout-landscape .grill { height: clamp(40px, 12cqh, 64px); }
+
+        @media (max-height: 430px) {
+            body.layout-landscape .d-pad { transform: translateY(-50%) scale(0.78); }
+            body.layout-landscape .action-buttons { transform: translateY(-50%) scale(0.78); }
+            body.layout-landscape .system-buttons { bottom: 30px; transform: translateX(-50%) rotate(0deg) scale(0.78); }
+            body.layout-landscape .game-settings-btn { transform: scale(0.84); }
+            body.layout-landscape .speaker { transform: rotate(-90deg) scale(0.85); }
+        }
+
+        @media (orientation: portrait) {
+            body.layout-landscape #console-wrapper.slide-up,
+            body.layout-landscape #console-wrapper.peek-up { width: 100vh; height: 100vw; width: 100dvh; height: 100dvw; top: 50%; left: 50%; }
+            body.layout-landscape #console-wrapper.slide-up { transform: translate(-50%, -50%) rotate(90deg); }
+            body.layout-landscape #console-wrapper.peek-up { transform: translate(-50%, 26%) rotate(90deg); }
+        }
     </style>
 </head>
 <body>
@@ -269,6 +319,13 @@
     <div class="game-settings-modal" id="gameSettingsModal">
         <div class="game-settings-panel">
             <h3>GAME SETTINGS</h3>
+            <div class="rotate-setting">
+                <div class="rotate-setting-title">ROTASI LAYOUT</div>
+                <div class="rotate-toggle" role="group" aria-label="Rotasi layout">
+                    <button class="rotate-option" id="btnLayoutPortrait" type="button" aria-pressed="true">PORTRAIT</button>
+                    <button class="rotate-option" id="btnLayoutLandscape" type="button" aria-pressed="false">LANDSCAPE</button>
+                </div>
+            </div>
             <button class="game-settings-action" id="btnSaveState" disabled>Save State</button>
             <button class="game-settings-action load" id="btnLoadState" disabled>Load State</button>
             <div class="game-settings-status" id="gameSettingsStatus">Power ON game terlebih dahulu untuk menyimpan state.</div>
@@ -704,7 +761,73 @@
         const gameSettingsStatus = document.getElementById('gameSettingsStatus');
         const btnSaveState = document.getElementById('btnSaveState');
         const btnLoadState = document.getElementById('btnLoadState');
+        const btnLayoutPortrait = document.getElementById('btnLayoutPortrait');
+        const btnLayoutLandscape = document.getElementById('btnLayoutLandscape');
         let gameSettingsRefreshId = 0;
+        const LAYOUT_MODE_KEY = 'gbaLayoutMode';
+        let layoutMode = localStorage.getItem(LAYOUT_MODE_KEY) === 'landscape' ? 'landscape' : 'portrait';
+
+        function syncLayoutButtons() {
+            const isLandscape = layoutMode === 'landscape';
+            btnLayoutPortrait.classList.toggle('active', !isLandscape);
+            btnLayoutLandscape.classList.toggle('active', isLandscape);
+            btnLayoutPortrait.setAttribute('aria-pressed', String(!isLandscape));
+            btnLayoutLandscape.setAttribute('aria-pressed', String(isLandscape));
+        }
+
+        function applyLayoutMode(mode, shouldStore = true) {
+            layoutMode = mode === 'landscape' ? 'landscape' : 'portrait';
+            document.body.classList.toggle('layout-landscape', layoutMode === 'landscape');
+            if (shouldStore) localStorage.setItem(LAYOUT_MODE_KEY, layoutMode);
+            syncLayoutButtons();
+        }
+
+        async function requestOrientationForLayout(mode) {
+            let didLock = false;
+
+            if (mode === 'landscape') {
+                try {
+                    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                        const target = document.documentElement;
+                        if (target.requestFullscreen) await target.requestFullscreen();
+                        else if (target.webkitRequestFullscreen) await target.webkitRequestFullscreen();
+                    }
+                } catch (err) {
+                    console.warn('Fullscreen for landscape layout failed:', err);
+                }
+
+                try {
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock('landscape');
+                        didLock = true;
+                    }
+                } catch (err) {
+                    console.warn('Orientation lock failed:', err);
+                }
+            } else {
+                try {
+                    if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+                } catch (err) {
+                    console.warn('Orientation unlock failed:', err);
+                }
+            }
+
+            return didLock;
+        }
+
+        async function chooseLayoutMode(mode) {
+            applyLayoutMode(mode);
+            const didLock = await requestOrientationForLayout(mode);
+            if (mode === 'landscape') {
+                showToast(didLock ? 'Landscape aktif.' : 'Layout landscape aktif.');
+            } else {
+                showToast('Portrait aktif.');
+            }
+        }
+
+        btnLayoutPortrait.addEventListener('click', () => chooseLayoutMode('portrait'));
+        btnLayoutLandscape.addEventListener('click', () => chooseLayoutMode('landscape'));
+        applyLayoutMode(layoutMode, false);
 
         function hasLogoAsset(rom) {
             return Boolean(rom.coverUrl && (rom.assetType === 'logo' || /\/logo\//i.test(rom.coverUrl)));
