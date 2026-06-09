@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Web GBA Emulator Sinematik</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Teko:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/nostalgist/dist/nostalgist.umd.js"></script>
+    
+    <style>
+        :root {
+            --body-color: #cdcbd4; --screen-bg: #5a5a68; --screen-color: #000000;
+            --dpad-color: #2b2b2b; --btn-color: #9c104e; --text-blue: #2a2082;
+            --select-start: #8e8e8e; --bg-dark: #121212;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; outline: none; }
+        body { margin: 0; padding: 0; background-color: var(--bg-dark); height: 100vh; overflow: hidden; font-family: sans-serif; display: flex; justify-content: center; align-items: center; }
+
+        /* --- LIBRARY MENU --- */
+        #library-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a24, #0d0d12); color: white; z-index: 50; display: flex; flex-direction: column; align-items: center; padding: 20px; transition: opacity 0.6s ease; overflow-y: auto; overflow-x: hidden; }
+        .top-bar { width: 100%; max-width: 400px; display: flex; justify-content: flex-end; padding-top: 10px; }
+        .settings-btn { background: #333; color: white; border: 1px solid #555; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: transform 0.2s; }
+        .settings-btn:active { transform: scale(0.9); }
+        .library-title { font-family: 'Press Start 2P', monospace; font-size: 14px; margin: 10px 0 30px; text-shadow: 2px 2px 0 var(--btn-color); text-align: center; line-height: 1.5; }
+
+        .cartridge-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; width: 100%; max-width: 400px; padding-bottom: 80px; }
+
+        /* Desain Kaset */
+        .cartridge { background: #b0b0b0; border-radius: 5px 5px 0 0; height: 120px; position: relative; box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3), 0 5px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.6s cubic-bezier(0.5, 0, 0.2, 1), opacity 0.4s; }
+        @keyframes jiggle { 0% {transform: rotate(-2deg);} 50% {transform: rotate(2deg);} 100% {transform: rotate(-2deg);} }
+        .cartridge.jiggling { animation: jiggle 0.2s infinite; }
+        
+        .cart-top { width: 100%; height: 15px; background: #999; border-radius: 5px 5px 0 0; border-bottom: 2px solid #777; display: flex; justify-content: space-evenly; align-items: center; }
+        .cart-rib { width: 15%; height: 5px; background: #777; border-radius: 2px; }
+        .cart-label { background: #eee; width: 85%; height: 75px; margin-top: 10px; border-radius: 5px; border: 1px solid #777; display: flex; justify-content: center; align-items: center; padding: 5px; text-align: center; color: #111; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 16px; line-height: 1.1; overflow: hidden; position: relative; }
+        .cart-label::before { content: 'NINTENDO GAMEBOY'; position: absolute; top: 2px; left: 0; width: 100%; font-size: 8px; color: #888; text-align: center; font-family: sans-serif; font-weight: normal; z-index: 1; }
+        .cart-cover-img { position: absolute; top: 12px; left: 0; width: 100%; height: calc(100% - 12px); background-size: cover; background-position: center; z-index: 2; border-top: 1px solid #ccc; border-radius: 0 0 4px 4px; }
+        .cart-text-name { z-index: 3; position: relative; text-shadow: 1px 1px 0px white; }
+
+        .add-cartridge { background: transparent; border: 2px dashed #555; color: #777; justify-content: center; }
+        .add-cartridge .cart-label { background: transparent; border: none; color: #777; font-size: 24px;}
+        #romInput { display: none; }
+
+        /* Menu Konteks (Long Press) */
+        #contextMenuOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 110; display: none; justify-content: center; align-items: flex-end; opacity: 0; transition: opacity 0.3s; }
+        .context-menu { background: #2a2a35; width: 100%; max-width: 400px; border-radius: 20px 20px 0 0; padding: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; gap: 15px; }
+        .context-title { color: #8bc34a; font-family: 'Press Start 2P', monospace; font-size: 10px; text-align: center; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 10px; word-break: break-all; }
+        .context-btn { background: #444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+        .context-btn:active { background: #666; }
+        .context-btn.danger { background: #ff4444; }
+        .context-btn.danger:active { background: #cc0000; }
+
+        /* Modal Settings API */
+        #settings-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #2a2a35; padding: 25px; border-radius: 10px; width: 100%; max-width: 350px; color: white; font-family: sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.8); }
+        .modal-content h3 { margin-top: 0; font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--btn-color); line-height: 1.5; }
+        .modal-content input { width: 100%; padding: 10px; margin: 15px 0; border-radius: 5px; border: none; background: #111; color: #0f0; font-family: monospace; outline: none; font-size: 12px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; background: #555; color: white; }
+        .modal-btn.save { background: #4CAF50; }
+
+        /* Loading UI */
+        #loadingOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index: 150; display: none; justify-content: center; align-items: center; flex-direction: column; gap: 20px; color: white; font-family: 'Press Start 2P', monospace; font-size: 10px; text-align: center; line-height: 2; padding: 20px; }
+        .loading-spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--btn-color); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Status warna */
+        .status-ok   { color: #8bc34a; }
+        .status-warn { color: #ffb300; }
+        .status-err  { color: #ff5252; }
+
+        /* --- ANIMASI KASET SINEMATIK --- */
+        #anim-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; display: none; justify-content: center; align-items: flex-start; overflow: hidden; }
+        .anim-cartridge { width: 150px; height: 160px; background: #b0b0b0; border-radius: 10px 10px 0 0; position: absolute; top: 0; left: 50%; margin-left: -75px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; }
+        .anim-cartridge .cart-label { height: 100px; font-size: 20px; }
+        .anim-cartridge .cart-cover-img { top: 15px; height: calc(100% - 15px); }
+
+        /* --- KONSOL GAMEBOY --- */
+        #console-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transform: translateY(100%); transition: transform 0.7s ease-out; z-index: 50; }
+        #console-wrapper.peek-up { transform: translateY(calc(100% - 90px)); transition: transform 0.8s ease-out; }
+        #console-wrapper.slide-up { transform: translateY(0); transition: transform 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.15); }
+        .console { background-color: var(--body-color); width: 100vw; max-width: 450px; height: 100vh; max-height: 900px; position: relative; border-radius: 10px 10px 40px 10px; box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2), 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; border-top: 5px solid #b8b6bf; border-left: 5px solid #e0dee6; }
+        .eject-btn { background: var(--btn-color); color: white; padding: 10px 20px; border-radius: 10px 10px 0 0; font-family: 'Press Start 2P', monospace; font-size: 10px; margin-bottom: -2px; box-shadow: 0 -3px 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 60; pointer-events: auto; }
+
+        .power-section { width: 100%; padding: 15px 20px 5px; display: flex; justify-content: flex-start; align-items: center; gap: 10px; }
+        .power-text { font-size: 10px; color: #666; font-weight: bold; }
+        .power-switch-container { width: 40px; height: 15px; background: #999; border-radius: 10px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); position: relative; cursor: pointer; }
+        .power-knob { width: 20px; height: 15px; background: #ddd; border-radius: 10px; position: absolute; left: 0; top: 0; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); transition: left 0.2s ease; border-right: 2px solid #bbb; }
+        .console.power-on .power-knob { left: 20px; background: #8bc34a; border-right: none; border-left: 2px solid #689f38;}
+
+        .top-grooves { width: 100%; height: 25px; border-bottom: 2px solid #b8b6bf; display: flex; justify-content: space-between; padding: 0 15px; }
+        .l-r-btn { width: 70px; height: 20px; background: #a0a0a0; border-radius: 0 0 10px 10px; border: 2px solid #777; border-top: none; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 2px; color: #444; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 14px; }
+        .l-r-btn.active { background: #777; }
+
+        .screen-container { background-color: var(--screen-bg); width: 90%; height: 35%; margin-top: 10px; border-radius: 10px 10px 40px 10px; padding: 15px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; }
+        .screen-top-text { color: #b8b6bf; font-size: 10px; width: 100%; display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .screen-lines { width: 30px; height: 8px; border-top: 2px solid #b8b6bf; border-bottom: 2px solid #2a2082; }
+        .screen { background-color: var(--screen-color); width: 80%; height: 75%; box-shadow: inset 5px 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; border-radius: 3px; }
+        canvas { width: 100% !important; height: 100% !important; object-fit: contain !important; image-rendering: pixelated; display: block; opacity: 0; transition: opacity 0.5s; }
+        .console.power-on canvas { opacity: 1; }
+
+        .battery { position: absolute; left: 10px; top: 40%; display: flex; flex-direction: column; align-items: center; }
+        .battery-led { width: 10px; height: 10px; background-color: #551111; border-radius: 50%; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); }
+        .console.power-on .battery-led { background-color: #ff3333; box-shadow: 0 0 8px #ff3333; }
+        .battery-text { color: #b8b6bf; font-size: 8px; margin-top: 5px; }
+
+        #bootScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; font-family: 'Press Start 2P', monospace; font-size: 10px; text-align: center; line-height: 1.5; z-index: 10; }
+        .console.power-on #bootScreen { display: flex; }
+
+        .logo-area { color: var(--text-blue); font-family: 'Teko', sans-serif; font-size: 26px; width: 90%; margin-top: 5px; text-align: left; font-style: italic; font-weight: bold; }
+        .logo-area span { color: #555; font-size: 18px; font-style: normal; font-weight: normal; }
+        .controls-container { width: 100%; flex: 1; position: relative; margin-top: 5px; }
+        .d-pad { position: absolute; top: 20px; left: 10%; width: 120px; height: 120px; }
+        .d-pad-vertical, .d-pad-horizontal { background-color: var(--dpad-color); position: absolute; border-radius: 5px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.1), inset -2px -2px 5px rgba(0,0,0,0.5), 3px 3px 5px rgba(0,0,0,0.3); }
+        .d-pad-vertical { width: 40px; height: 120px; left: 40px; top: 0; }
+        .d-pad-horizontal { width: 120px; height: 40px; left: 0; top: 40px; }
+        .d-pad-center { position: absolute; width: 30px; height: 30px; background: linear-gradient(135deg, #333, #111); border-radius: 50%; top: 45px; left: 45px; }
+        .d-hitbox { position: absolute; z-index: 10; cursor: pointer; }
+        .d-up { top: -10px; left: 30px; width: 60px; height: 60px; }
+        .d-down { bottom: -10px; left: 30px; width: 60px; height: 60px; }
+        .d-left { top: 30px; left: -10px; width: 60px; height: 60px; }
+        .d-right { top: 30px; right: -10px; width: 60px; height: 60px; }
+
+        .action-buttons { position: absolute; top: 20px; right: 5%; width: 130px; height: 100px; transform: rotate(-25deg); }
+        .btn { width: 55px; height: 55px; background-color: var(--btn-color); border-radius: 50%; position: absolute; box-shadow: inset 3px 3px 8px rgba(255,255,255,0.3), inset -3px -3px 8px rgba(0,0,0,0.5), 2px 4px 6px rgba(0,0,0,0.3); cursor: pointer; }
+        .btn:active, .btn.active { transform: scale(0.95); box-shadow: inset 5px 5px 10px rgba(0,0,0,0.6); }
+        .btn-b { left: 0; bottom: 0; }
+        .btn-a { right: 0; top: 0; }
+        .btn-label { position: absolute; color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 18px; bottom: -25px; right: 15px; }
+
+        .system-buttons { position: absolute; bottom: 30%; left: 25%; display: flex; gap: 20px; transform: rotate(-25deg); }
+        .sys-btn-wrapper { display: flex; flex-direction: column; align-items: center; }
+        .sys-btn { width: 55px; height: 15px; background-color: var(--select-start); border-radius: 20px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -2px -2px 5px rgba(0,0,0,0.5), 1px 2px 4px rgba(0,0,0,0.3); cursor: pointer; }
+        .sys-btn:active, .sys-btn.active { transform: scale(0.95); box-shadow: inset 3px 3px 8px rgba(0,0,0,0.6); }
+        .sys-label { color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 14px; margin-top: 5px; }
+        .speaker { position: absolute; bottom: 5%; right: 10%; display: flex; gap: 8px; transform: rotate(-25deg); }
+        .grill { width: 8px; height: 60px; background-color: #b8b6bf; border-radius: 5px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3); }
+
+        @media (max-height: 700px) { .screen-container { height: 32%; } .d-pad { transform: scale(0.85); top: 10px; left: 5%; } .action-buttons { transform: scale(0.85) rotate(-25deg); top: 10px; right: 0; } .system-buttons { bottom: 20%; transform: scale(0.85) rotate(-25deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- LIBRARY MENU -->
+    <div id="library-view">
+        <div class="top-bar"><button class="settings-btn" id="btnSettings">⚙️</button></div>
+        <h1 class="library-title">Koleksi Kaset</h1>
+        <div class="cartridge-grid" id="cartridgeGrid">
+            <div class="cartridge add-cartridge" onclick="document.getElementById('romInput').click()">
+                <div class="cart-top"><div class="cart-rib"></div><div class="cart-rib"></div></div>
+                <div class="cart-label"><br>+ Tambah<br>ROM</div>
+            </div>
+        </div>
+    </div>
+    <input type="file" id="romInput" accept=".gba,.gbc,.gb,.zip">
+
+    <!-- MENU KONTEKS (LONG PRESS) -->
+    <div id="contextMenuOverlay">
+        <div class="context-menu" id="contextMenu">
+            <div class="context-title" id="contextTitle">Opsi Kaset</div>
+            <button class="context-btn" id="btnFetchCover">🔄 Unduh Ulang Cover</button>
+            <button class="context-btn danger" id="btnDeleteCart">🗑️ Hapus Kaset</button>
+            <button class="context-btn" id="btnCancelContext">Batal</button>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h3>PENGATURAN API</h3>
+            <p style="font-size:11px; line-height:1.6; color:#aaa; margin-bottom:10px;">
+                Masukkan API Key <strong style="color:#fff">SteamGridDB</strong> Anda untuk mengunduh cover otomatis.<br>
+                Daftar gratis di <a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank" style="color:#8bc34a;">steamgriddb.com</a>
+            </p>
+            <input type="text" id="apiKeyInput" placeholder="Tempel SteamGridDB API Key di sini...">
+            <div style="font-size:10px; color:#555; margin-bottom:10px; font-family:monospace;">
+                Proxy aktif: corsproxy.io (mendukung header Auth)
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn" id="btnCancelSettings">Batal</button>
+                <button class="modal-btn save" id="btnSaveSettings">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p id="loadingText">Menyiapkan Kaset...</p>
+    </div>
+
+    <!-- ANIMASI LAYER -->
+    <div id="anim-container">
+        <div class="anim-cartridge" id="animCartridge">
+            <div class="cart-top"><div class="cart-rib"></div><div class="cart-rib"></div><div class="cart-rib"></div></div>
+            <div class="cart-label" id="animCartLabel">
+                <div class="cart-cover-img" id="animCoverImg" style="display:none;"></div>
+                <span class="cart-text-name" id="animTextName">GAME</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KONSOL GAMEBOY -->
+    <div id="console-wrapper">
+        <div class="eject-btn" id="ejectBtn">▲ CABUT KASET</div>
+        <div class="console" id="gameboyConsole">
+            <div class="power-section"><span class="power-text">◄ OFF &nbsp;&nbsp; ON ►</span><div class="power-switch-container" id="powerSwitch"><div class="power-knob"></div></div></div>
+            <div class="top-grooves"><div class="l-r-btn" id="btn-l">L</div><div class="l-r-btn" id="btn-r">R</div></div>
+            <div class="screen-container">
+                <div class="screen-top-text"><div class="screen-lines"></div><span>ADVANCE SYSTEM</span><div class="screen-lines"></div></div>
+                <div class="battery"><div class="battery-led"></div><span class="battery-text">BATTERY</span></div>
+                <div class="screen"><canvas id="gameCanvas"></canvas><div id="bootScreen"><p id="bootText" style="color:#aaa;">Menunggu Power...</p></div></div>
+            </div>
+            <div class="logo-area">Nintendo <span>GAME BOY</span> <span style="font-style:italic; font-weight:bold; color:var(--text-blue); font-size:22px;">ADVANCE</span></div>
+            <div class="controls-container">
+                <div class="d-pad"><div class="d-pad-vertical"></div><div class="d-pad-horizontal"></div><div class="d-pad-center"></div><div class="d-hitbox d-up" id="btn-up"></div><div class="d-hitbox d-down" id="btn-down"></div><div class="d-hitbox d-left" id="btn-left"></div><div class="d-hitbox d-right" id="btn-right"></div></div>
+                <div class="action-buttons"><div class="btn btn-b" id="btn-b"><span class="btn-label">B</span></div><div class="btn btn-a" id="btn-a"><span class="btn-label">A</span></div></div>
+                <div class="system-buttons"><div class="sys-btn-wrapper"><div class="sys-btn" id="btn-select"></div><span class="sys-label">SELECT</span></div><div class="sys-btn-wrapper"><div class="sys-btn" id="btn-start"></div><span class="sys-label">START</span></div></div>
+                <div class="speaker"><div class="grill"></div><div class="grill"></div><div class="grill"></div><div class="grill"></div><div class="grill"></div><div class="grill"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        // PENGATURAN API KEY
+        // ================================================================
+        const settingsModal = document.getElementById('settings-modal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+
+        document.getElementById('btnSettings').onclick = () => {
+            apiKeyInput.value = localStorage.getItem('steamGridApiKey') || '';
+            settingsModal.style.display = 'flex';
+        };
+        document.getElementById('btnCancelSettings').onclick = () => { settingsModal.style.display = 'none'; };
+        document.getElementById('btnSaveSettings').onclick = () => {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('steamGridApiKey', key);
+                settingsModal.style.display = 'none';
+                showToast('✅ API Key disimpan!');
+            } else {
+                localStorage.removeItem('steamGridApiKey');
+                settingsModal.style.display = 'none';
+                showToast('⚠️ API Key dihapus.');
+            }
+        };
+
+        // ================================================================
+        // HELPER: TOAST NOTIFICATION
+        // ================================================================
+        function showToast(msg) {
+            let t = document.getElementById('toast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'toast';
+                Object.assign(t.style, {
+                    position:'fixed', bottom:'20px', left:'50%', transform:'translateX(-50%)',
+                    background:'#333', color:'#fff', padding:'10px 18px', borderRadius:'20px',
+                    fontFamily:'sans-serif', fontSize:'12px', zIndex:'9999',
+                    transition:'opacity 0.3s', pointerEvents:'none'
+                });
+                document.body.appendChild(t);
+            }
+            t.innerText = msg;
+            t.style.opacity = '1';
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+        }
+
+        // ================================================================
+        // FETCH COVER STEAMGRIDDB
+        //
+        // FIX UTAMA: Ganti AllOrigins → corsproxy.io
+        // Alasan: AllOrigins TIDAK meneruskan header Authorization ke server tujuan.
+        //         corsproxy.io meneruskan semua request headers termasuk Bearer token.
+        //         Response langsung JSON (tidak dibungkus .contents seperti AllOrigins).
+        // ================================================================
+        
+        const CORS_PROXY = 'https://corsproxy.io/?url=';
+        // Fallback proxy jika corsproxy.io down
+        const CORS_PROXY_FALLBACK = 'https://api.codetabs.com/v1/proxy?quest=';
+
+        async function steamGridFetch(apiUrl, apiKey) {
+            /**
+             * Coba request lewat corsproxy.io dulu.
+             * Jika gagal (network error / 4xx), coba fallback proxy.
+             * 
+             * PENTING: corsproxy.io meneruskan headers → Authorization berhasil dikirim.
+             * Fallback proxy (codetabs) juga meneruskan headers.
+             */
+            const proxies = [CORS_PROXY, CORS_PROXY_FALLBACK];
+            
+            for (const proxy of proxies) {
+                try {
+                    const res = await fetch(proxy + encodeURIComponent(apiUrl), {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            // Content-Type tidak diperlukan untuk GET
+                        }
+                    });
+
+                    if (!res.ok) {
+                        // Status 401 = API Key salah, langsung lempar error, jangan coba proxy lain
+                        if (res.status === 401) throw new Error('API_KEY_INVALID');
+                        // Status lain (502, 503, dll) → coba proxy berikutnya
+                        console.warn(`Proxy ${proxy} returned ${res.status}, trying next...`);
+                        continue;
+                    }
+
+                    // corsproxy.io & codetabs mengembalikan JSON langsung (bukan wrapper)
+                    const data = await res.json();
+                    return data;
+
+                } catch (err) {
+                    if (err.message === 'API_KEY_INVALID') throw err; // Hentikan total
+                    console.warn(`Proxy ${proxy} error:`, err.message);
+                    // Lanjut ke proxy berikutnya
+                }
+            }
+            throw new Error('SEMUA_PROXY_GAGAL');
+        }
+
+        async function fetchSteamGridCover(fileNameOrQuery, updateStatus) {
+            const apiKey = localStorage.getItem('steamGridApiKey');
+            if (!apiKey) {
+                updateStatus('⚠️ API Key belum diset.\nBuka ⚙️ Settings untuk memasukkan key.', 'warn');
+                return null;
+            }
+
+            // Bersihkan nama ROM: hapus ekstensi, kode region (USA), kode versi, dll.
+            let cleanName = fileNameOrQuery
+                .replace(/\.[^/.]+$/, '')              // hapus .gba/.gb
+                .replace(/ *\([^)]*\) */g, ' ')        // hapus (USA), (Europe), dll
+                .replace(/ *\[[^\]]*\] */g, ' ')       // hapus [!], [T+Eng], dll
+                .replace(/[-_]/g, ' ')                  // ganti - dan _ dengan spasi
+                .replace(/\s+/g, ' ')                   // normalisasi spasi ganda
+                .trim();
+
+            updateStatus(`🔍 Mencari:\n"${cleanName}"`, 'ok');
+
+            try {
+                // === LANGKAH 1: Cari game berdasarkan nama ===
+                const searchUrl = `https://www.steamgriddb.com/api/v2/search/autocomplete/${encodeURIComponent(cleanName)}`;
+                const searchData = await steamGridFetch(searchUrl, apiKey);
+
+                if (!searchData.success || !searchData.data || searchData.data.length === 0) {
+                    updateStatus(`❌ Game "${cleanName}"\ntidak ditemukan.`, 'warn');
+                    return null;
+                }
+
+                const game = searchData.data[0];
+                const gameId = game.id;
+                updateStatus(`✅ Ditemukan: "${game.name}"\nMengambil gambar...`, 'ok');
+
+                // === LANGKAH 2: Ambil grid cover (prioritas vertikal) ===
+                // Parameter: dimensions memfilter hanya vertikal (poster-style)
+                const gridUrl = `https://www.steamgriddb.com/api/v2/grids/game/${gameId}?dimensions=600x900,342x482,660x930&limit=20`;
+                const gridData = await steamGridFetch(gridUrl, apiKey);
+
+                if (!gridData.success || !gridData.data || gridData.data.length === 0) {
+                    // Coba tanpa filter dimensi sebagai fallback
+                    updateStatus('🔄 Cover vertikal tidak ada,\nmencoba semua format...', 'warn');
+                    const gridUrlAny = `https://www.steamgriddb.com/api/v2/grids/game/${gameId}?limit=10`;
+                    const gridDataAny = await steamGridFetch(gridUrlAny, apiKey);
+                    
+                    if (!gridDataAny.success || !gridDataAny.data || gridDataAny.data.length === 0) {
+                        updateStatus('⚠️ Game ditemukan tapi\ntidak ada cover tersedia.', 'warn');
+                        return null;
+                    }
+                    // Pilih yang paling banyak di-vote (kualitas terbaik komunitas)
+                    const best = gridDataAny.data.sort((a, b) => b.upvotes - a.upvotes)[0];
+                    updateStatus('✅ Cover berhasil diunduh!', 'ok');
+                    return best.url;
+                }
+
+                // Pilih cover vertikal dengan upvotes tertinggi
+                const best = gridData.data.sort((a, b) => b.upvotes - a.upvotes)[0];
+                updateStatus('✅ Cover berhasil diunduh!', 'ok');
+                return best.url;
+
+            } catch (err) {
+                console.error('SteamGridDB error:', err);
+                if (err.message === 'API_KEY_INVALID') {
+                    updateStatus('🔑 API Key tidak valid!\nCek kembali di Settings ⚙️', 'err');
+                } else if (err.message === 'SEMUA_PROXY_GAGAL') {
+                    updateStatus('📡 Semua proxy gagal.\nCek koneksi internet Anda.', 'err');
+                } else {
+                    updateStatus(`❌ Error: ${err.message}`, 'err');
+                }
+                return null;
+            }
+        }
+
+        // ================================================================
+        // LOADING OVERLAY HELPER
+        // ================================================================
+        function setLoadingStatus(msg, type = '') {
+            const el = document.getElementById('loadingText');
+            // Hapus class warna lama
+            el.className = '';
+            if (type === 'ok')   el.className = 'status-ok';
+            if (type === 'warn') el.className = 'status-warn';
+            if (type === 'err')  el.className = 'status-err';
+            el.innerText = msg;
+        }
+
+        function showLoading(msg = 'Memuat...') {
+            setLoadingStatus(msg);
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('loadingText').className = '';
+        }
+
+        // ================================================================
+        // SYNTHESIZER SUARA "KLACK"
+        // ================================================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function playClickSound() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.15);
+            gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        // ================================================================
+        // SISTEM PENYIMPANAN ROM (INDEXEDDB)
+        // ================================================================
+        const DB_NAME = "RetroBoyDB";
+        const STORE_NAME = "roms";
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 2);
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains(STORE_NAME)) {
+                        database.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (e) => { db = e.target.result; resolve(); };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function saveROM(file) {
+            showLoading('Memulai proses...');
+
+            // Fetch cover dengan status update real-time
+            let coverUrl = await fetchSteamGridCover(file.name, (msg, type) => setLoadingStatus(msg, type));
+
+            // Tunda sebentar agar user bisa baca status terakhir
+            await new Promise(r => setTimeout(r, 1200));
+            setLoadingStatus('💾 Menyimpan kaset ke storage...');
+
+            // Nama pendek untuk label jika tidak ada cover
+            let shortName = file.name
+                .replace(/\.[^/.]+$/, '')
+                .replace(/ *\([^)]*\) */g, '')
+                .substring(0, 16)
+                .trim();
+
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], "readwrite");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.add({
+                    name: shortName,
+                    originalFileName: file.name,
+                    file: file,
+                    timestamp: Date.now(),
+                    coverUrl: coverUrl
+                });
+                request.onsuccess = () => { hideLoading(); resolve(); };
+                request.onerror = (e) => { hideLoading(); reject(e.target.error); };
+            });
+        }
+
+        function getROMs() {
+            return new Promise((resolve, reject) => {
+                const req = db.transaction([STORE_NAME], "readonly").objectStore(STORE_NAME).getAll();
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function deleteROM(id) {
+            return new Promise((resolve, reject) => {
+                const req = db.transaction([STORE_NAME], "readwrite").objectStore(STORE_NAME).delete(id);
+                req.onsuccess = () => resolve();
+                req.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function updateROMCover(id, newCoverUrl) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], "readwrite");
+                const store = transaction.objectStore(STORE_NAME);
+                const getReq = store.get(id);
+                getReq.onsuccess = () => {
+                    const data = getReq.result;
+                    data.coverUrl = newCoverUrl;
+                    const putReq = store.put(data);
+                    putReq.onsuccess = () => resolve();
+                    putReq.onerror = (e) => reject(e.target.error);
+                };
+                getReq.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        // ================================================================
+        // STATE & UI ELEMENTS
+        // ================================================================
+        let emulatorInstance = null;
+        let selectedRomFile = null;
+        let isPowerOn = false;
+        let activeContextRom = null;
+
+        const libraryView = document.getElementById('library-view');
+        const cartridgeGrid = document.getElementById('cartridgeGrid');
+        const animContainer = document.getElementById('anim-container');
+        const consoleWrapper = document.getElementById('console-wrapper');
+        const powerSwitch = document.getElementById('powerSwitch');
+        const contextMenuOverlay = document.getElementById('contextMenuOverlay');
+        const contextMenu = document.getElementById('contextMenu');
+
+        // ================================================================
+        // LOAD LIBRARY
+        // ================================================================
+        async function loadLibrary() {
+            const roms = await getROMs();
+            const addBtn = cartridgeGrid.firstElementChild;
+            cartridgeGrid.innerHTML = '';
+            cartridgeGrid.appendChild(addBtn);
+
+            roms.sort((a, b) => b.timestamp - a.timestamp).forEach(rom => {
+                const cart = document.createElement('div');
+                cart.className = 'cartridge';
+
+                const coverHtml = rom.coverUrl
+                    ? `<div class="cart-cover-img" style="background-image: url('${rom.coverUrl}');"></div>`
+                    : '';
+                const textHtml = rom.coverUrl
+                    ? ''
+                    : `<span class="cart-text-name"><br>${rom.name}</span>`;
+
+                cart.innerHTML = `
+                    <div class="cart-top"><div class="cart-rib"></div><div class="cart-rib"></div><div class="cart-rib"></div></div>
+                    <div class="cart-label">
+                        ${coverHtml}
+                        ${textHtml}
+                    </div>`;
+
+                // Sistem Long Press
+                let pressTimer;
+                let isLongPress = false;
+
+                const startPress = (e) => {
+                    if (e.type === 'touchstart') e.preventDefault();
+                    isLongPress = false;
+                    cart.classList.add('jiggling');
+                    pressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        cart.classList.remove('jiggling');
+                        showContextMenu(rom);
+                    }, 800);
+                };
+
+                const endPress = () => {
+                    clearTimeout(pressTimer);
+                    cart.classList.remove('jiggling');
+                    if (!isLongPress) playCartridgeSequence(rom, cart);
+                };
+
+                cart.addEventListener('mousedown', startPress);
+                cart.addEventListener('touchstart', startPress, { passive: false });
+                cart.addEventListener('mouseup', endPress);
+                cart.addEventListener('touchend', endPress);
+                cart.addEventListener('mouseleave', () => {
+                    clearTimeout(pressTimer);
+                    cart.classList.remove('jiggling');
+                });
+
+                cartridgeGrid.appendChild(cart);
+            });
+        }
+
+        // ================================================================
+        // CONTEXT MENU
+        // ================================================================
+        function showContextMenu(rom) {
+            activeContextRom = rom;
+            document.getElementById('contextTitle').innerText = rom.originalFileName || rom.name;
+            contextMenuOverlay.style.display = 'flex';
+            void contextMenuOverlay.offsetWidth; // force reflow
+            contextMenuOverlay.style.opacity = '1';
+            contextMenu.style.transform = 'translateY(0)';
+        }
+
+        function hideContextMenu() {
+            contextMenuOverlay.style.opacity = '0';
+            contextMenu.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                contextMenuOverlay.style.display = 'none';
+                activeContextRom = null;
+            }, 300);
+        }
+
+        document.getElementById('btnCancelContext').onclick = hideContextMenu;
+
+        document.getElementById('btnDeleteCart').onclick = async () => {
+            if (confirm(`Hapus kaset "${activeContextRom.name}" secara permanen?`)) {
+                await deleteROM(activeContextRom.id);
+                hideContextMenu();
+                await loadLibrary();
+            }
+        };
+
+        document.getElementById('btnFetchCover').onclick = async () => {
+            const romToUpdate = activeContextRom; // simpan referensi sebelum menu ditutup
+            hideContextMenu();
+
+            showLoading('Mencari cover...');
+            const searchName = romToUpdate.originalFileName || romToUpdate.name;
+            const newCoverUrl = await fetchSteamGridCover(searchName, (msg, type) => setLoadingStatus(msg, type));
+
+            await new Promise(r => setTimeout(r, 1200)); // beri waktu baca status
+
+            if (newCoverUrl) {
+                setLoadingStatus('💾 Memperbarui kaset...', 'ok');
+                await updateROMCover(romToUpdate.id, newCoverUrl);
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            hideLoading();
+            await loadLibrary();
+        };
+
+        // ================================================================
+        // INPUT FILE ROM
+        // ================================================================
+        document.getElementById('romInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                await saveROM(file);
+                await loadLibrary();
+                e.target.value = '';
+            }
+        });
+
+        // ================================================================
+        // ANIMASI KASET SINEMATIK
+        // ================================================================
+        function playCartridgeSequence(rom, cartElement) {
+            if (!audioCtx) audioCtx = new AudioContext();
+            selectedRomFile = rom.file;
+
+            const animCoverImg = document.getElementById('animCoverImg');
+            const animTextName = document.getElementById('animTextName');
+
+            if (rom.coverUrl) {
+                animCoverImg.style.backgroundImage = `url('${rom.coverUrl}')`;
+                animCoverImg.style.display = 'block';
+                animTextName.style.display = 'none';
+            } else {
+                animCoverImg.style.display = 'none';
+                animTextName.innerHTML = `<br>${rom.name}`;
+                animTextName.style.display = 'block';
+            }
+
+            const rect = cartElement.getBoundingClientRect();
+            const isLeft = (rect.left + rect.width / 2) < (window.innerWidth / 2);
+
+            cartElement.style.transform = isLeft ? 'translateX(-150vw)' : 'translateX(150vw)';
+
+            setTimeout(() => { libraryView.style.opacity = '0'; }, 300);
+
+            const animCartridge = document.getElementById('animCartridge');
+            animContainer.style.display = 'flex';
+            animCartridge.style.transition = 'none';
+            animCartridge.style.transform = isLeft
+                ? 'translate(-100vw, 30px) scale(1.3)'
+                : 'translate(100vw, 30px) scale(1.3)';
+
+            setTimeout(() => {
+                libraryView.style.display = 'none';
+                animCartridge.style.transition = 'transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                animCartridge.style.transform = 'translate(0, 30px) scale(1.3)';
+
+                setTimeout(() => {
+                    consoleWrapper.classList.add('peek-up');
+
+                    setTimeout(() => {
+                        animCartridge.style.transition = 'transform 0.3s ease-in';
+                        animCartridge.style.transform = 'translate(0, 160px) scale(1.3)';
+
+                        setTimeout(() => {
+                            playClickSound();
+                            setTimeout(() => {
+                                animContainer.style.display = 'none';
+                                consoleWrapper.classList.remove('peek-up');
+                                consoleWrapper.classList.add('slide-up');
+                                document.getElementById('bootText').innerHTML = "Kaset Terpasang.<br><br>Geser tombol Power<br>ke ON.";
+                            }, 50);
+                        }, 300);
+                    }, 800);
+                }, 800);
+            }, 600);
+        }
+
+        // ================================================================
+        // POWER ON / OFF
+        // ================================================================
+        powerSwitch.addEventListener('click', async () => {
+            if (!selectedRomFile) return;
+
+            const gameboyConsole = document.getElementById('gameboyConsole');
+            const bootText = document.getElementById('bootText');
+
+            if (!isPowerOn) {
+                // === POWER ON ===
+                isPowerOn = true;
+                gameboyConsole.classList.add('power-on');
+                bootText.innerHTML = "NINTENDO<br><br>Memuat Core...";
+                try {
+                    emulatorInstance = await Nostalgist.launch({
+                        core: 'mgba',
+                        rom: selectedRomFile,
+                        element: document.getElementById('gameCanvas')
+                    });
+                    document.getElementById('bootScreen').style.display = 'none';
+                } catch (err) {
+                    bootText.innerHTML = `<span style="color:red">ERROR</span><br><br>${err.message}`;
+                    isPowerOn = false;
+                    gameboyConsole.classList.remove('power-on');
+                }
+            } else {
+                // === POWER OFF ===
+                isPowerOn = false;
+                gameboyConsole.classList.remove('power-on');
+                document.getElementById('bootScreen').style.display = 'flex';
+                bootText.innerHTML = "Mati.";
+                if (emulatorInstance) {
+                    try { await emulatorInstance.exit(); } catch (e) { console.warn('Exit error:', e); }
+                    emulatorInstance = null;
+                }
+            }
+        });
+
+        // ================================================================
+        // EJECT BUTTON
+        // FIX: Tambah flag isEjecting agar tidak bisa double-tap,
+        //      dan tunggu power-off selesai sebelum kembali ke library.
+        // ================================================================
+        let isEjecting = false;
+
+        document.getElementById('ejectBtn').addEventListener('click', async () => {
+            if (isEjecting) return;
+            isEjecting = true;
+
+            // Matikan emulator dulu kalau lagi nyala
+            if (isPowerOn) {
+                const gameboyConsole = document.getElementById('gameboyConsole');
+                isPowerOn = false;
+                gameboyConsole.classList.remove('power-on');
+                document.getElementById('bootScreen').style.display = 'flex';
+                document.getElementById('bootText').innerHTML = "Mati.";
+                if (emulatorInstance) {
+                    try { await emulatorInstance.exit(); } catch (e) { console.warn('Exit error:', e); }
+                    emulatorInstance = null;
+                }
+            }
+
+            selectedRomFile = null;
+
+            // Slide konsol ke bawah
+            consoleWrapper.classList.remove('slide-up', 'peek-up');
+
+            // Tunggu animasi konsol turun (~700ms) baru tampilkan library
+            setTimeout(() => {
+                // Reset semua transform kaset
+                Array.from(cartridgeGrid.children).forEach(cart => {
+                    cart.style.transition = 'transform 0.4s ease';
+                    cart.style.transform = 'none';
+                });
+
+                libraryView.style.display = 'flex';
+                setTimeout(() => {
+                    libraryView.style.opacity = '1';
+                    isEjecting = false;
+                }, 50);
+            }, 750);
+        });
+
+        // ================================================================
+        // KONTROL SENTUH (TOUCHSCREEN)
+        // ================================================================
+        const keyMap = {
+            'btn-up':    { key: 'ArrowUp',    code: 'ArrowUp',    keyCode: 38 },
+            'btn-down':  { key: 'ArrowDown',  code: 'ArrowDown',  keyCode: 40 },
+            'btn-left':  { key: 'ArrowLeft',  code: 'ArrowLeft',  keyCode: 37 },
+            'btn-right': { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
+            'btn-a':     { key: 'x',          code: 'KeyX',       keyCode: 88 },
+            'btn-b':     { key: 'z',          code: 'KeyZ',       keyCode: 90 },
+            'btn-start': { key: 'Enter',      code: 'Enter',      keyCode: 13 },
+            'btn-select':{ key: 'Shift',      code: 'ShiftLeft',  keyCode: 16 },
+            'btn-l':     { key: 'q',          code: 'KeyQ',       keyCode: 81 },
+            'btn-r':     { key: 'w',          code: 'KeyW',       keyCode: 87 }
+        };
+
+        function simulateKey(obj, type) {
+            const ev = new KeyboardEvent(type, {
+                key: obj.key, code: obj.code, keyCode: obj.keyCode,
+                which: obj.keyCode, bubbles: true
+            });
+            document.dispatchEvent(ev);
+            const cv = document.getElementById('gameCanvas');
+            if (cv) cv.dispatchEvent(ev);
+        }
+
+        function bindButton(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const press   = (e) => { e.preventDefault(); el.classList.add('active');    if (isPowerOn) simulateKey(keyMap[id], 'keydown'); };
+            const release = (e) => { e.preventDefault(); el.classList.remove('active'); if (isPowerOn) simulateKey(keyMap[id], 'keyup');   };
+            el.addEventListener('touchstart', press,   { passive: false });
+            el.addEventListener('touchend',   release, { passive: false });
+            el.addEventListener('mousedown',  press);
+            window.addEventListener('mouseup', release);
+        }
+
+        Object.keys(keyMap).forEach(bindButton);
+
+        // Cegah scroll saat main (tapi izinkan di library & modal)
+        document.body.addEventListener('touchmove', (e) => {
+            const inScrollable = e.target.closest('#library-view') ||
+                                 e.target.closest('#settings-modal') ||
+                                 e.target.closest('#contextMenu');
+            if (!inScrollable) e.preventDefault();
+        }, { passive: false });
+
+        // ================================================================
+        // INIT
+        // ================================================================
+        window.onload = async () => {
+            try {
+                await initDB();
+                await loadLibrary();
+            } catch (e) {
+                console.error('Init error:', e);
+            }
+        };
+    </script>
+</body>
+</html>
