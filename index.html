@@ -28,19 +28,32 @@
         .cartridge-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; width: 100%; max-width: 400px; padding-bottom: 80px; }
 
         /* Desain Kaset */
-        .cartridge { background: #b0b0b0; border-radius: 5px 5px 0 0; height: 120px; position: relative; box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3), 0 5px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.6s cubic-bezier(0.5, 0, 0.2, 1), opacity 0.4s; }
+        .cartridge { background: linear-gradient(180deg, #565c65 0%, #3f454e 36%, #343941 100%); border: 1px solid #1f242b; border-top-color: #6b737d; border-radius: 14px 14px 15px 15px; height: 126px; position: relative; box-shadow: inset 0 2px 1px rgba(255,255,255,0.18), inset 8px 0 18px rgba(255,255,255,0.04), inset -8px -10px 22px rgba(0,0,0,0.26), 0 8px 16px rgba(0,0,0,0.48); display: block; cursor: pointer; overflow: hidden; transition: transform 0.6s cubic-bezier(0.5, 0, 0.2, 1), opacity 0.4s; }
         @keyframes jiggle { 0% {transform: rotate(-2deg);} 50% {transform: rotate(2deg);} 100% {transform: rotate(-2deg);} }
         .cartridge.jiggling { animation: jiggle 0.2s infinite; }
-        
-        .cart-top { width: 100%; height: 15px; background: #999; border-radius: 5px 5px 0 0; border-bottom: 2px solid #777; display: flex; justify-content: space-evenly; align-items: center; }
-        .cart-rib { width: 15%; height: 5px; background: #777; border-radius: 2px; }
-        .cart-label { background: #eee; width: 85%; height: 75px; margin-top: 10px; border-radius: 5px; border: 1px solid #777; display: flex; justify-content: center; align-items: center; padding: 5px; text-align: center; color: #111; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 16px; line-height: 1.1; overflow: hidden; position: relative; }
-        .cart-label::before { content: 'NINTENDO GAMEBOY'; position: absolute; top: 2px; left: 0; width: 100%; font-size: 8px; color: #888; text-align: center; font-family: sans-serif; font-weight: normal; z-index: 1; }
-        .cart-logo-img { position: absolute; top: 12px; left: 0; width: 100%; height: calc(100% - 12px); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 2; border-top: 1px solid #ccc; border-radius: 0 0 4px 4px; }
-        .cart-text-name { z-index: 3; position: relative; text-shadow: 1px 1px 0px white; }
 
-        .add-cartridge { background: transparent; border: 2px dashed #555; color: #777; justify-content: center; }
-        .add-cartridge .cart-label { background: transparent; border: none; color: #777; font-size: 24px;}
+        .cart-top { position: absolute; top: 0; left: 0; width: 100%; height: 34px; background: linear-gradient(180deg, #626972, #4a5059 64%, #3a4048); border-bottom: 1px solid rgba(18,22,28,0.55); box-shadow: inset 0 2px 2px rgba(255,255,255,0.12), inset 0 -7px 14px rgba(0,0,0,0.18); }
+        .cart-top::after { content: ''; position: absolute; left: 22%; right: 22%; bottom: 4px; height: 24px; border-top: 4px solid rgba(36,41,48,0.72); border-radius: 50% 50% 0 0; opacity: 0.78; }
+        .cart-corner-lines { position: absolute; top: 10px; width: 28px; height: 17px; z-index: 2; }
+        .cart-corner-lines span { position: absolute; width: 15px; height: 3px; background: linear-gradient(180deg, #252b32, #3d444d); border-radius: 999px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.35); }
+        .cart-corner-left { left: 9px; }
+        .cart-corner-left span { transform: rotate(-45deg); }
+        .cart-corner-left span:nth-child(1) { left: 0; top: 0; }
+        .cart-corner-left span:nth-child(2) { left: 7px; top: 5px; }
+        .cart-corner-left span:nth-child(3) { left: 14px; top: 10px; }
+        .cart-corner-right { right: 9px; }
+        .cart-corner-right span { transform: rotate(45deg); }
+        .cart-corner-right span:nth-child(1) { right: 0; top: 0; }
+        .cart-corner-right span:nth-child(2) { right: 7px; top: 5px; }
+        .cart-corner-right span:nth-child(3) { right: 14px; top: 10px; }
+        .cart-label { position: absolute; left: 16px; right: 16px; top: 42px; bottom: 18px; background: linear-gradient(180deg, #565d66, #464c55); border-radius: 10px; border: 3px solid #303640; box-shadow: inset 0 2px 2px rgba(255,255,255,0.12), inset 0 -3px 8px rgba(0,0,0,0.2), 0 1px 1px rgba(255,255,255,0.08); display: flex; justify-content: center; align-items: center; padding: 8px; text-align: center; color: #d8dde4; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 16px; line-height: 1.05; overflow: hidden; }
+        .cart-label::before { content: ''; position: absolute; inset: 4px; border-radius: 6px; border-top: 1px solid rgba(255,255,255,0.08); border-left: 1px solid rgba(255,255,255,0.04); pointer-events: none; z-index: 1; }
+        .cart-logo-img { position: absolute; inset: 8px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 2; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45)); }
+        .cart-text-name { z-index: 3; position: relative; color: #eef2f7; text-shadow: 0 2px 2px rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; min-height: 100%; }
+        .cart-notch { position: absolute; left: 50%; bottom: 6px; width: 42px; height: 18px; transform: translateX(-50%); background: linear-gradient(180deg, #4f5660, #2f353d); clip-path: polygon(0 0, 50% 100%, 100% 0); filter: drop-shadow(0 -1px 1px rgba(255,255,255,0.12)); }
+
+        .add-cartridge { border-color: #6f7782; color: #d8dde4; }
+        .add-cartridge .cart-label { border-style: dashed; color: #d8dde4; font-size: 22px; letter-spacing: 0; }
         #romInput { display: none; }
 
         /* Menu Konteks (Long Press) */
@@ -72,9 +85,8 @@
 
         /* --- ANIMASI KASET SINEMATIK --- */
         #anim-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; display: none; justify-content: center; align-items: flex-start; overflow: hidden; }
-        .anim-cartridge { width: 150px; height: 160px; background: #b0b0b0; border-radius: 10px 10px 0 0; position: absolute; top: 0; left: 50%; margin-left: -75px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; }
-        .anim-cartridge .cart-label { height: 100px; font-size: 20px; }
-        .anim-cartridge .cart-logo-img { top: 15px; height: calc(100% - 15px); }
+        .anim-cartridge { width: 190px; height: 126px; background: linear-gradient(180deg, #565c65 0%, #3f454e 36%, #343941 100%); border: 1px solid #1f242b; border-top-color: #6b737d; border-radius: 14px 14px 15px 15px; position: absolute; top: 0; left: 50%; margin-left: -95px; box-shadow: inset 0 2px 1px rgba(255,255,255,0.18), inset -8px -10px 22px rgba(0,0,0,0.26), 0 8px 16px rgba(0,0,0,0.48); overflow: hidden; }
+        .anim-cartridge .cart-label { font-size: 18px; }
 
         /* --- KONSOL GAMEBOY --- */
         #console-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transform: translateY(100%); transition: transform 0.7s ease-out; z-index: 50; }
@@ -89,14 +101,14 @@
         .power-knob { width: 20px; height: 15px; background: #ddd; border-radius: 10px; position: absolute; left: 0; top: 0; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); transition: left 0.2s ease; border-right: 2px solid #bbb; }
         .console.power-on .power-knob { left: 20px; background: #8bc34a; border-right: none; border-left: 2px solid #689f38;}
 
-        .top-grooves { width: 100%; height: 20px; border-bottom: 2px solid #b8b6bf; display: flex; justify-content: space-between; padding: 0 14px; }
-        .l-r-btn { width: 74px; height: 18px; background: #a0a0a0; border-radius: 0 0 9px 9px; border: 2px solid #777; border-top: none; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 1px; color: #444; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 13px; }
+        .top-grooves { width: 90%; min-height: 38px; display: grid; grid-template-columns: 74px 1fr 74px; align-items: center; gap: 8px; padding: 0 4px; margin-top: 7px; }
+        .l-r-btn { width: 74px; height: 28px; background: #a0a0a0; border-radius: 12px; border: 2px solid #777; cursor: pointer; display: flex; justify-content: center; align-items: center; color: #444; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 16px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.22), inset -2px -2px 5px rgba(0,0,0,0.35), 1px 2px 4px rgba(0,0,0,0.25); }
         .l-r-btn.active { background: #777; }
 
         .screen-container { background-color: var(--screen-bg); width: 92%; height: 39%; margin-top: 6px; border-radius: 10px 10px 40px 10px; padding: 12px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; }
         .screen-top-text { color: #b8b6bf; font-size: 10px; width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px; }
         .screen-lines { width: 30px; height: 8px; border-top: 2px solid #b8b6bf; border-bottom: 2px solid #2a2082; }
-        .screen { background-color: var(--screen-color); width: 84%; height: 78%; box-shadow: inset 5px 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; border-radius: 3px; }
+        .screen { background-color: var(--screen-color); width: 84%; aspect-ratio: 3 / 2; height: auto; flex: none; box-shadow: inset 5px 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; border-radius: 3px; }
         canvas { width: 100% !important; height: 100% !important; object-fit: contain !important; image-rendering: pixelated; display: block; opacity: 0; transition: opacity 0.5s; }
         .console.power-on canvas { opacity: 1; }
 
@@ -108,8 +120,9 @@
         #bootScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; font-family: 'Press Start 2P', monospace; font-size: 10px; text-align: center; line-height: 1.5; z-index: 10; }
         .console.power-on #bootScreen { display: flex; }
 
-        .logo-area { color: var(--text-blue); font-family: 'Teko', sans-serif; font-size: 24px; width: 90%; margin-top: 3px; text-align: left; font-style: italic; font-weight: bold; }
-        .logo-area span { color: #555; font-size: 18px; font-style: normal; font-weight: normal; }
+        .logo-area { color: var(--text-blue); font-family: 'Teko', sans-serif; font-size: 18px; text-align: center; font-style: italic; font-weight: bold; line-height: 1; white-space: nowrap; overflow: hidden; }
+        .logo-area span { color: #555; font-size: 13px; font-style: normal; font-weight: normal; }
+        .logo-area .advance-mark { color: var(--text-blue); font-size: 16px; font-style: italic; font-weight: bold; }
         .controls-container { width: 100%; flex: 1; position: relative; margin-top: 5px; }
         .d-pad { position: absolute; top: 20px; left: 10%; width: 120px; height: 120px; }
         .d-pad-vertical, .d-pad-horizontal { background-color: var(--dpad-color); position: absolute; border-radius: 5px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.1), inset -2px -2px 5px rgba(0,0,0,0.5), 3px 3px 5px rgba(0,0,0,0.3); }
@@ -151,8 +164,12 @@
         <h1 class="library-title">Koleksi Kaset</h1>
         <div class="cartridge-grid" id="cartridgeGrid">
             <div class="cartridge add-cartridge" onclick="document.getElementById('romInput').click()">
-                <div class="cart-top"><div class="cart-rib"></div><div class="cart-rib"></div></div>
-                <div class="cart-label"><br>+ Tambah<br>ROM</div>
+                <div class="cart-top">
+                    <div class="cart-corner-lines cart-corner-left"><span></span><span></span><span></span></div>
+                    <div class="cart-corner-lines cart-corner-right"><span></span><span></span><span></span></div>
+                </div>
+                <div class="cart-label"><span class="cart-text-name">+ Tambah<br>ROM</span></div>
+                <div class="cart-notch"></div>
             </div>
         </div>
     </div>
@@ -196,25 +213,28 @@
     <!-- ANIMASI LAYER -->
     <div id="anim-container">
         <div class="anim-cartridge" id="animCartridge">
-            <div class="cart-top"><div class="cart-rib"></div><div class="cart-rib"></div><div class="cart-rib"></div></div>
+            <div class="cart-top">
+                <div class="cart-corner-lines cart-corner-left"><span></span><span></span><span></span></div>
+                <div class="cart-corner-lines cart-corner-right"><span></span><span></span><span></span></div>
+            </div>
             <div class="cart-label" id="animCartLabel">
                 <div class="cart-logo-img" id="animCoverImg" style="display:none;"></div>
                 <span class="cart-text-name" id="animTextName">GAME</span>
             </div>
+            <div class="cart-notch"></div>
         </div>
     </div>
 
     <!-- KONSOL GAMEBOY -->
     <div id="console-wrapper">
         <div class="console" id="gameboyConsole">
-            <div class="top-grooves"><div class="l-r-btn" id="btn-l">L</div><div class="l-r-btn" id="btn-r">R</div></div>
             <div class="power-section"><span class="power-text">◄ OFF &nbsp;&nbsp; ON ►</span><div class="power-switch-container" id="powerSwitch"><div class="power-knob"></div></div><div class="eject-btn" id="ejectBtn">▲ CABUT</div></div>
             <div class="screen-container">
                 <div class="screen-top-text"><div class="screen-lines"></div><span>ADVANCE SYSTEM</span><div class="screen-lines"></div></div>
                 <div class="battery"><div class="battery-led"></div><span class="battery-text">BATTERY</span></div>
                 <div class="screen"><canvas id="gameCanvas"></canvas><div id="bootScreen"><p id="bootText" style="color:#aaa;">Menunggu Power...</p></div></div>
             </div>
-            <div class="logo-area">Nintendo <span>GAME BOY</span> <span style="font-style:italic; font-weight:bold; color:var(--text-blue); font-size:22px;">ADVANCE</span></div>
+            <div class="top-grooves"><div class="l-r-btn" id="btn-l">L</div><div class="logo-area">Nintendo <span>GAME BOY</span> <span class="advance-mark">ADVANCE</span></div><div class="l-r-btn" id="btn-r">R</div></div>
             <div class="controls-container">
                 <div class="d-pad"><div class="d-pad-vertical"></div><div class="d-pad-horizontal"></div><div class="d-pad-center"></div><div class="d-hitbox d-up" id="btn-up"></div><div class="d-hitbox d-down" id="btn-down"></div><div class="d-hitbox d-left" id="btn-left"></div><div class="d-hitbox d-right" id="btn-right"></div></div>
                 <div class="action-buttons"><div class="btn btn-b" id="btn-b"><span class="btn-label">B</span></div><div class="btn btn-a" id="btn-a"><span class="btn-label">A</span></div></div>
@@ -575,14 +595,18 @@
                     : '';
                 const textHtml = hasLogo
                     ? ''
-                    : `<span class="cart-text-name"><br>${rom.name}</span>`;
+                    : `<span class="cart-text-name">${rom.name}</span>`;
 
                 cart.innerHTML = `
-                    <div class="cart-top"><div class="cart-rib"></div><div class="cart-rib"></div><div class="cart-rib"></div></div>
+                    <div class="cart-top">
+                        <div class="cart-corner-lines cart-corner-left"><span></span><span></span><span></span></div>
+                        <div class="cart-corner-lines cart-corner-right"><span></span><span></span><span></span></div>
+                    </div>
                     <div class="cart-label">
                         ${logoHtml}
                         ${textHtml}
-                    </div>`;
+                    </div>
+                    <div class="cart-notch"></div>`;
 
                 // Sistem Long Press
                 let pressTimer;
@@ -697,7 +721,7 @@
                 animTextName.style.display = 'none';
             } else {
                 animCoverImg.style.display = 'none';
-                animTextName.innerHTML = `<br>${rom.name}`;
+                animTextName.innerText = rom.name;
                 animTextName.style.display = 'block';
             }
 
