@@ -19,9 +19,10 @@
 
         /* --- LIBRARY MENU --- */
         #library-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a24, #0d0d12); color: white; z-index: 50; display: flex; flex-direction: column; align-items: center; padding: 20px; transition: opacity 0.6s ease; overflow-y: auto; overflow-x: hidden; }
-        .top-bar { width: 100%; max-width: 400px; display: flex; justify-content: flex-end; padding-top: 10px; }
-        .settings-btn { background: #333; color: white; border: 1px solid #555; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: transform 0.2s; }
-        .settings-btn:active { transform: scale(0.9); }
+        .top-bar { width: 100%; max-width: 400px; display: flex; justify-content: flex-end; gap: 10px; padding-top: 10px; }
+        .settings-btn, .fullscreen-btn { background: #333; color: white; border: 1px solid #555; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: transform 0.2s, background 0.2s; }
+        .settings-btn:active, .fullscreen-btn:active { transform: scale(0.9); }
+        .fullscreen-btn { font-size: 18px; }
         .library-title { font-family: 'Press Start 2P', monospace; font-size: 14px; margin: 10px 0 30px; text-shadow: 2px 2px 0 var(--btn-color); text-align: center; line-height: 1.5; }
 
         .cartridge-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; width: 100%; max-width: 400px; padding-bottom: 80px; }
@@ -35,7 +36,7 @@
         .cart-rib { width: 15%; height: 5px; background: #777; border-radius: 2px; }
         .cart-label { background: #eee; width: 85%; height: 75px; margin-top: 10px; border-radius: 5px; border: 1px solid #777; display: flex; justify-content: center; align-items: center; padding: 5px; text-align: center; color: #111; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 16px; line-height: 1.1; overflow: hidden; position: relative; }
         .cart-label::before { content: 'NINTENDO GAMEBOY'; position: absolute; top: 2px; left: 0; width: 100%; font-size: 8px; color: #888; text-align: center; font-family: sans-serif; font-weight: normal; z-index: 1; }
-        .cart-cover-img { position: absolute; top: 12px; left: 0; width: 100%; height: calc(100% - 12px); background-size: cover; background-position: center; z-index: 2; border-top: 1px solid #ccc; border-radius: 0 0 4px 4px; }
+        .cart-logo-img { position: absolute; top: 12px; left: 0; width: 100%; height: calc(100% - 12px); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 2; border-top: 1px solid #ccc; border-radius: 0 0 4px 4px; }
         .cart-text-name { z-index: 3; position: relative; text-shadow: 1px 1px 0px white; }
 
         .add-cartridge { background: transparent; border: 2px dashed #555; color: #777; justify-content: center; }
@@ -73,29 +74,29 @@
         #anim-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; display: none; justify-content: center; align-items: flex-start; overflow: hidden; }
         .anim-cartridge { width: 150px; height: 160px; background: #b0b0b0; border-radius: 10px 10px 0 0; position: absolute; top: 0; left: 50%; margin-left: -75px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; }
         .anim-cartridge .cart-label { height: 100px; font-size: 20px; }
-        .anim-cartridge .cart-cover-img { top: 15px; height: calc(100% - 15px); }
+        .anim-cartridge .cart-logo-img { top: 15px; height: calc(100% - 15px); }
 
         /* --- KONSOL GAMEBOY --- */
         #console-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transform: translateY(100%); transition: transform 0.7s ease-out; z-index: 50; }
         #console-wrapper.peek-up { transform: translateY(calc(100% - 90px)); transition: transform 0.8s ease-out; }
         #console-wrapper.slide-up { transform: translateY(0); transition: transform 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.15); }
         .console { background-color: var(--body-color); width: 100vw; max-width: 450px; height: 100vh; max-height: 900px; position: relative; border-radius: 10px 10px 40px 10px; box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2), 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; border-top: 5px solid #b8b6bf; border-left: 5px solid #e0dee6; }
-        .eject-btn { background: var(--btn-color); color: white; padding: 10px 20px; border-radius: 10px 10px 0 0; font-family: 'Press Start 2P', monospace; font-size: 10px; margin-bottom: -2px; box-shadow: 0 -3px 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 60; pointer-events: auto; }
+        .eject-btn { margin-left: auto; background: var(--btn-color); color: white; padding: 8px 12px; border-radius: 999px; font-family: 'Press Start 2P', monospace; font-size: 8px; line-height: 1; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.2), inset -2px -2px 5px rgba(0,0,0,0.35), 0 2px 5px rgba(0,0,0,0.25); cursor: pointer; z-index: 60; pointer-events: auto; white-space: nowrap; }
 
-        .power-section { width: 100%; padding: 15px 20px 5px; display: flex; justify-content: flex-start; align-items: center; gap: 10px; }
+        .power-section { width: 100%; padding: 6px 16px 4px; display: flex; justify-content: flex-start; align-items: center; gap: 10px; min-height: 32px; }
         .power-text { font-size: 10px; color: #666; font-weight: bold; }
         .power-switch-container { width: 40px; height: 15px; background: #999; border-radius: 10px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); position: relative; cursor: pointer; }
         .power-knob { width: 20px; height: 15px; background: #ddd; border-radius: 10px; position: absolute; left: 0; top: 0; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); transition: left 0.2s ease; border-right: 2px solid #bbb; }
         .console.power-on .power-knob { left: 20px; background: #8bc34a; border-right: none; border-left: 2px solid #689f38;}
 
-        .top-grooves { width: 100%; height: 25px; border-bottom: 2px solid #b8b6bf; display: flex; justify-content: space-between; padding: 0 15px; }
-        .l-r-btn { width: 70px; height: 20px; background: #a0a0a0; border-radius: 0 0 10px 10px; border: 2px solid #777; border-top: none; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 2px; color: #444; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 14px; }
+        .top-grooves { width: 100%; height: 20px; border-bottom: 2px solid #b8b6bf; display: flex; justify-content: space-between; padding: 0 14px; }
+        .l-r-btn { width: 74px; height: 18px; background: #a0a0a0; border-radius: 0 0 9px 9px; border: 2px solid #777; border-top: none; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 1px; color: #444; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 13px; }
         .l-r-btn.active { background: #777; }
 
-        .screen-container { background-color: var(--screen-bg); width: 90%; height: 35%; margin-top: 10px; border-radius: 10px 10px 40px 10px; padding: 15px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; }
-        .screen-top-text { color: #b8b6bf; font-size: 10px; width: 100%; display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .screen-container { background-color: var(--screen-bg); width: 92%; height: 39%; margin-top: 6px; border-radius: 10px 10px 40px 10px; padding: 12px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; }
+        .screen-top-text { color: #b8b6bf; font-size: 10px; width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px; }
         .screen-lines { width: 30px; height: 8px; border-top: 2px solid #b8b6bf; border-bottom: 2px solid #2a2082; }
-        .screen { background-color: var(--screen-color); width: 80%; height: 75%; box-shadow: inset 5px 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; border-radius: 3px; }
+        .screen { background-color: var(--screen-color); width: 84%; height: 78%; box-shadow: inset 5px 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; border-radius: 3px; }
         canvas { width: 100% !important; height: 100% !important; object-fit: contain !important; image-rendering: pixelated; display: block; opacity: 0; transition: opacity 0.5s; }
         .console.power-on canvas { opacity: 1; }
 
@@ -107,7 +108,7 @@
         #bootScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; font-family: 'Press Start 2P', monospace; font-size: 10px; text-align: center; line-height: 1.5; z-index: 10; }
         .console.power-on #bootScreen { display: flex; }
 
-        .logo-area { color: var(--text-blue); font-family: 'Teko', sans-serif; font-size: 26px; width: 90%; margin-top: 5px; text-align: left; font-style: italic; font-weight: bold; }
+        .logo-area { color: var(--text-blue); font-family: 'Teko', sans-serif; font-size: 24px; width: 90%; margin-top: 3px; text-align: left; font-style: italic; font-weight: bold; }
         .logo-area span { color: #555; font-size: 18px; font-style: normal; font-weight: normal; }
         .controls-container { width: 100%; flex: 1; position: relative; margin-top: 5px; }
         .d-pad { position: absolute; top: 20px; left: 10%; width: 120px; height: 120px; }
@@ -136,14 +137,17 @@
         .speaker { position: absolute; bottom: 5%; right: 10%; display: flex; gap: 8px; transform: rotate(-25deg); }
         .grill { width: 8px; height: 60px; background-color: #b8b6bf; border-radius: 5px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3); }
 
-        @media (max-height: 700px) { .screen-container { height: 32%; } .d-pad { transform: scale(0.85); top: 10px; left: 5%; } .action-buttons { transform: scale(0.85) rotate(-25deg); top: 10px; right: 0; } .system-buttons { bottom: 20%; transform: scale(0.85) rotate(-25deg); } }
+        @media (max-height: 700px) { .screen-container { height: 36%; } .d-pad { transform: scale(0.85); top: 10px; left: 5%; } .action-buttons { transform: scale(0.85) rotate(-25deg); top: 10px; right: 0; } .system-buttons { bottom: 20%; transform: scale(0.85) rotate(-25deg); } }
     </style>
 </head>
 <body>
 
     <!-- LIBRARY MENU -->
     <div id="library-view">
-        <div class="top-bar"><button class="settings-btn" id="btnSettings">⚙️</button></div>
+        <div class="top-bar">
+            <button class="fullscreen-btn" id="btnFullscreen" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+            <button class="settings-btn" id="btnSettings" title="Settings" aria-label="Settings">⚙️</button>
+        </div>
         <h1 class="library-title">Koleksi Kaset</h1>
         <div class="cartridge-grid" id="cartridgeGrid">
             <div class="cartridge add-cartridge" onclick="document.getElementById('romInput').click()">
@@ -158,7 +162,7 @@
     <div id="contextMenuOverlay">
         <div class="context-menu" id="contextMenu">
             <div class="context-title" id="contextTitle">Opsi Kaset</div>
-            <button class="context-btn" id="btnFetchCover">🔄 Unduh Ulang Cover</button>
+            <button class="context-btn" id="btnFetchCover">🔄 Unduh Ulang Logo</button>
             <button class="context-btn danger" id="btnDeleteCart">🗑️ Hapus Kaset</button>
             <button class="context-btn" id="btnCancelContext">Batal</button>
         </div>
@@ -169,7 +173,7 @@
         <div class="modal-content">
             <h3>PENGATURAN API</h3>
             <p style="font-size:11px; line-height:1.6; color:#aaa; margin-bottom:10px;">
-                Masukkan API Key <strong style="color:#fff">SteamGridDB</strong> Anda untuk mengunduh cover otomatis.<br>
+                Masukkan API Key <strong style="color:#fff">SteamGridDB</strong> Anda untuk mengunduh logo otomatis.<br>
                 Daftar gratis di <a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank" style="color:#8bc34a;">steamgriddb.com</a>
             </p>
             <input type="text" id="apiKeyInput" placeholder="Tempel SteamGridDB API Key di sini...">
@@ -194,7 +198,7 @@
         <div class="anim-cartridge" id="animCartridge">
             <div class="cart-top"><div class="cart-rib"></div><div class="cart-rib"></div><div class="cart-rib"></div></div>
             <div class="cart-label" id="animCartLabel">
-                <div class="cart-cover-img" id="animCoverImg" style="display:none;"></div>
+                <div class="cart-logo-img" id="animCoverImg" style="display:none;"></div>
                 <span class="cart-text-name" id="animTextName">GAME</span>
             </div>
         </div>
@@ -202,10 +206,9 @@
 
     <!-- KONSOL GAMEBOY -->
     <div id="console-wrapper">
-        <div class="eject-btn" id="ejectBtn">▲ CABUT KASET</div>
         <div class="console" id="gameboyConsole">
-            <div class="power-section"><span class="power-text">◄ OFF &nbsp;&nbsp; ON ►</span><div class="power-switch-container" id="powerSwitch"><div class="power-knob"></div></div></div>
             <div class="top-grooves"><div class="l-r-btn" id="btn-l">L</div><div class="l-r-btn" id="btn-r">R</div></div>
+            <div class="power-section"><span class="power-text">◄ OFF &nbsp;&nbsp; ON ►</span><div class="power-switch-container" id="powerSwitch"><div class="power-knob"></div></div><div class="eject-btn" id="ejectBtn">▲ CABUT</div></div>
             <div class="screen-container">
                 <div class="screen-top-text"><div class="screen-lines"></div><span>ADVANCE SYSTEM</span><div class="screen-lines"></div></div>
                 <div class="battery"><div class="battery-led"></div><span class="battery-text">BATTERY</span></div>
@@ -227,6 +230,29 @@
         // ================================================================
         const settingsModal = document.getElementById('settings-modal');
         const apiKeyInput = document.getElementById('apiKeyInput');
+        const fullscreenBtn = document.getElementById('btnFullscreen');
+
+        fullscreenBtn.onclick = async () => {
+            try {
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    const target = document.documentElement;
+                    if (target.requestFullscreen) await target.requestFullscreen();
+                    else if (target.webkitRequestFullscreen) target.webkitRequestFullscreen();
+                } else {
+                    if (document.exitFullscreen) await document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                }
+            } catch (err) {
+                showToast('Fullscreen tidak tersedia di browser ini.');
+            }
+        };
+
+        const syncFullscreenIcon = () => {
+            fullscreenBtn.innerText = (document.fullscreenElement || document.webkitFullscreenElement) ? '⤢' : '⛶';
+        };
+
+        document.addEventListener('fullscreenchange', syncFullscreenIcon);
+        document.addEventListener('webkitfullscreenchange', syncFullscreenIcon);
 
         document.getElementById('btnSettings').onclick = () => {
             apiKeyInput.value = localStorage.getItem('steamGridApiKey') || '';
@@ -269,7 +295,7 @@
         }
 
         // ================================================================
-        // FETCH COVER STEAMGRIDDB
+        // FETCH LOGO STEAMGRIDDB
         //
         // FIX UTAMA: Ganti AllOrigins → corsproxy.io
         // Alasan: AllOrigins TIDAK meneruskan header Authorization ke server tujuan.
@@ -322,7 +348,7 @@
             throw new Error('SEMUA_PROXY_GAGAL');
         }
 
-        async function fetchSteamGridCover(fileNameOrQuery, updateStatus) {
+        async function fetchSteamGridLogo(fileNameOrQuery, updateStatus) {
             const apiKey = localStorage.getItem('steamGridApiKey');
             if (!apiKey) {
                 updateStatus('⚠️ API Key belum diset.\nBuka ⚙️ Settings untuk memasukkan key.', 'warn');
@@ -352,32 +378,20 @@
 
                 const game = searchData.data[0];
                 const gameId = game.id;
-                updateStatus(`✅ Ditemukan: "${game.name}"\nMengambil gambar...`, 'ok');
+                updateStatus(`✅ Ditemukan: "${game.name}"\nMengambil logo...`, 'ok');
 
-                // === LANGKAH 2: Ambil grid cover (prioritas vertikal) ===
-                // Parameter: dimensions memfilter hanya vertikal (poster-style)
-                const gridUrl = `https://www.steamgriddb.com/api/v2/grids/game/${gameId}?dimensions=600x900,342x482,660x930&limit=20`;
-                const gridData = await steamGridFetch(gridUrl, apiKey);
+                // === LANGKAH 2: Ambil logo game ===
+                const logoUrl = `https://www.steamgriddb.com/api/v2/logos/game/${gameId}?limit=20`;
+                const logoData = await steamGridFetch(logoUrl, apiKey);
 
-                if (!gridData.success || !gridData.data || gridData.data.length === 0) {
-                    // Coba tanpa filter dimensi sebagai fallback
-                    updateStatus('🔄 Cover vertikal tidak ada,\nmencoba semua format...', 'warn');
-                    const gridUrlAny = `https://www.steamgriddb.com/api/v2/grids/game/${gameId}?limit=10`;
-                    const gridDataAny = await steamGridFetch(gridUrlAny, apiKey);
-                    
-                    if (!gridDataAny.success || !gridDataAny.data || gridDataAny.data.length === 0) {
-                        updateStatus('⚠️ Game ditemukan tapi\ntidak ada cover tersedia.', 'warn');
-                        return null;
-                    }
-                    // Pilih yang paling banyak di-vote (kualitas terbaik komunitas)
-                    const best = gridDataAny.data.sort((a, b) => b.upvotes - a.upvotes)[0];
-                    updateStatus('✅ Cover berhasil diunduh!', 'ok');
-                    return best.url;
+                if (!logoData.success || !logoData.data || logoData.data.length === 0) {
+                    updateStatus('⚠️ Game ditemukan tapi\ntidak ada logo tersedia.', 'warn');
+                    return null;
                 }
 
-                // Pilih cover vertikal dengan upvotes tertinggi
-                const best = gridData.data.sort((a, b) => b.upvotes - a.upvotes)[0];
-                updateStatus('✅ Cover berhasil diunduh!', 'ok');
+                // Pilih logo dengan upvotes tertinggi
+                const best = logoData.data.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0))[0];
+                updateStatus('✅ Logo berhasil diunduh!', 'ok');
                 return best.url;
 
             } catch (err) {
@@ -459,14 +473,14 @@
         async function saveROM(file) {
             showLoading('Memulai proses...');
 
-            // Fetch cover dengan status update real-time
-            let coverUrl = await fetchSteamGridCover(file.name, (msg, type) => setLoadingStatus(msg, type));
+            // Fetch logo dengan status update real-time
+            let logoUrl = await fetchSteamGridLogo(file.name, (msg, type) => setLoadingStatus(msg, type));
 
             // Tunda sebentar agar user bisa baca status terakhir
             await new Promise(r => setTimeout(r, 1200));
             setLoadingStatus('💾 Menyimpan kaset ke storage...');
 
-            // Nama pendek untuk label jika tidak ada cover
+            // Nama pendek untuk label jika tidak ada logo
             let shortName = file.name
                 .replace(/\.[^/.]+$/, '')
                 .replace(/ *\([^)]*\) */g, '')
@@ -481,7 +495,8 @@
                     originalFileName: file.name,
                     file: file,
                     timestamp: Date.now(),
-                    coverUrl: coverUrl
+                    coverUrl: logoUrl,
+                    assetType: 'logo'
                 });
                 request.onsuccess = () => { hideLoading(); resolve(); };
                 request.onerror = (e) => { hideLoading(); reject(e.target.error); };
@@ -512,6 +527,7 @@
                 getReq.onsuccess = () => {
                     const data = getReq.result;
                     data.coverUrl = newCoverUrl;
+                    data.assetType = 'logo';
                     const putReq = store.put(data);
                     putReq.onsuccess = () => resolve();
                     putReq.onerror = (e) => reject(e.target.error);
@@ -536,6 +552,10 @@
         const contextMenuOverlay = document.getElementById('contextMenuOverlay');
         const contextMenu = document.getElementById('contextMenu');
 
+        function hasLogoAsset(rom) {
+            return Boolean(rom.coverUrl && (rom.assetType === 'logo' || /\/logo\//i.test(rom.coverUrl)));
+        }
+
         // ================================================================
         // LOAD LIBRARY
         // ================================================================
@@ -549,17 +569,18 @@
                 const cart = document.createElement('div');
                 cart.className = 'cartridge';
 
-                const coverHtml = rom.coverUrl
-                    ? `<div class="cart-cover-img" style="background-image: url('${rom.coverUrl}');"></div>`
+                const hasLogo = hasLogoAsset(rom);
+                const logoHtml = hasLogo
+                    ? `<div class="cart-logo-img" style="background-image: url('${rom.coverUrl}');"></div>`
                     : '';
-                const textHtml = rom.coverUrl
+                const textHtml = hasLogo
                     ? ''
                     : `<span class="cart-text-name"><br>${rom.name}</span>`;
 
                 cart.innerHTML = `
                     <div class="cart-top"><div class="cart-rib"></div><div class="cart-rib"></div><div class="cart-rib"></div></div>
                     <div class="cart-label">
-                        ${coverHtml}
+                        ${logoHtml}
                         ${textHtml}
                     </div>`;
 
@@ -632,15 +653,15 @@
             const romToUpdate = activeContextRom; // simpan referensi sebelum menu ditutup
             hideContextMenu();
 
-            showLoading('Mencari cover...');
+            showLoading('Mencari logo...');
             const searchName = romToUpdate.originalFileName || romToUpdate.name;
-            const newCoverUrl = await fetchSteamGridCover(searchName, (msg, type) => setLoadingStatus(msg, type));
+            const newLogoUrl = await fetchSteamGridLogo(searchName, (msg, type) => setLoadingStatus(msg, type));
 
             await new Promise(r => setTimeout(r, 1200)); // beri waktu baca status
 
-            if (newCoverUrl) {
+            if (newLogoUrl) {
                 setLoadingStatus('💾 Memperbarui kaset...', 'ok');
-                await updateROMCover(romToUpdate.id, newCoverUrl);
+                await updateROMCover(romToUpdate.id, newLogoUrl);
                 await new Promise(r => setTimeout(r, 500));
             }
 
@@ -670,7 +691,7 @@
             const animCoverImg = document.getElementById('animCoverImg');
             const animTextName = document.getElementById('animTextName');
 
-            if (rom.coverUrl) {
+            if (hasLogoAsset(rom)) {
                 animCoverImg.style.backgroundImage = `url('${rom.coverUrl}')`;
                 animCoverImg.style.display = 'block';
                 animTextName.style.display = 'none';
