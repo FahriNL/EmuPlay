@@ -16,6 +16,10 @@
 
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; outline: none; }
         body { margin: 0; padding: 0; background-color: var(--bg-dark); height: 100vh; overflow: hidden; font-family: sans-serif; display: flex; justify-content: center; align-items: center; }
+        button, .d-pad, .d-hitbox, .btn, .sys-btn, .sys-btn-wrapper, .l-r-btn, .game-settings-btn, .power-switch-container, .eject-btn, [data-control] { -webkit-tap-highlight-color: transparent; outline: none; }
+        .d-pad, .d-hitbox, .btn, .sys-btn, .sys-btn-wrapper, .l-r-btn, .game-settings-btn, .power-switch-container, .eject-btn, [data-control] { touch-action: none; }
+        [data-control] { --ctrl-x: 0px; --ctrl-y: 0px; --ctrl-scale: 1; }
+        button:focus { outline: none; }
 
         /* --- LIBRARY MENU --- */
         #library-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a24, #0d0d12); color: white; z-index: 50; display: flex; flex-direction: column; align-items: center; padding: 20px; transition: opacity 0.6s ease; overflow-y: auto; overflow-x: hidden; }
@@ -102,7 +106,7 @@
         .console.power-on .power-knob { left: 20px; background: #8bc34a; border-right: none; border-left: 2px solid #689f38;}
 
         .top-grooves { width: 90%; min-height: 40px; display: grid; grid-template-columns: 74px 1fr 74px; align-items: center; gap: 8px; padding: 0 4px; margin-top: 7px; }
-        .l-r-btn { width: 74px; height: 28px; background: #a0a0a0; border-radius: 12px; border: 2px solid #777; cursor: pointer; display: flex; justify-content: center; align-items: center; color: #444; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 16px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.22), inset -2px -2px 5px rgba(0,0,0,0.35), 1px 2px 4px rgba(0,0,0,0.25); }
+        .l-r-btn { width: 74px; height: 28px; background: #a0a0a0; border-radius: 12px; border: 2px solid #777; cursor: pointer; display: flex; justify-content: center; align-items: center; color: #444; font-family: 'Teko', sans-serif; font-weight: bold; font-size: 16px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.22), inset -2px -2px 5px rgba(0,0,0,0.35), 1px 2px 4px rgba(0,0,0,0.25); transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); transform-origin: center; }
         .l-r-btn.active { background: #777; }
 
         .screen-container { background-color: var(--screen-bg); width: 92%; height: auto; margin-top: 6px; border-radius: 10px 10px 40px 10px; padding: 14px 16px 18px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; flex: none; }
@@ -112,10 +116,10 @@
         canvas { width: 100% !important; height: 100% !important; object-fit: contain !important; image-rendering: pixelated; display: block; opacity: 0; transition: opacity 0.5s; }
         .console.power-on canvas { opacity: 1; }
 
-        .battery { position: absolute; left: 12px; top: 58%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; }
+        .battery { position: absolute; left: 14px; top: 13px; transform: none; display: flex; flex-direction: row; align-items: center; gap: 5px; z-index: 4; }
         .battery-led { width: 10px; height: 10px; background-color: #551111; border-radius: 50%; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); }
         .console.power-on .battery-led { background-color: #ff3333; box-shadow: 0 0 8px #ff3333; }
-        .battery-text { color: #b8b6bf; font-size: 8px; margin-top: 5px; }
+        .battery-text { color: #b8b6bf; font-size: 8px; margin-top: 0; }
 
         #bootScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; font-family: 'Press Start 2P', monospace; font-size: 10px; text-align: center; line-height: 1.5; z-index: 10; }
         .console.power-on #bootScreen { display: flex; }
@@ -124,7 +128,7 @@
         .logo-area span { color: #555; font-size: 15px; font-style: normal; font-weight: normal; }
         .logo-area .advance-mark { color: var(--text-blue); font-size: 19px; font-style: italic; font-weight: bold; }
         .controls-container { width: 100%; flex: 1; min-height: 300px; position: relative; margin-top: 0; }
-        .d-pad { position: absolute; top: calc(34% - 58px); left: max(10px, calc(23% - 58px)); width: 116px; height: 116px; touch-action: none; filter: drop-shadow(4px 7px 6px rgba(0,0,0,0.34)); }
+        .d-pad { position: absolute; top: calc(34% - 58px); left: max(10px, calc(23% - 58px)); width: 116px; height: 116px; touch-action: none; filter: drop-shadow(4px 7px 6px rgba(0,0,0,0.34)); transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); transform-origin: center; }
         .d-pad::before { content: ''; position: absolute; inset: 37px; background: linear-gradient(145deg, #262626, #111); border-radius: 4px; box-shadow: inset 3px 3px 6px rgba(255,255,255,0.05), inset -4px -4px 8px rgba(0,0,0,0.5); z-index: 2; }
         .d-pad-arm { background: linear-gradient(145deg, #262626 0%, #151515 62%, #0c0c0c 100%); position: absolute; box-shadow: inset 4px 4px 7px rgba(255,255,255,0.075), inset -5px -5px 10px rgba(0,0,0,0.52), 2px 4px 5px rgba(0,0,0,0.32); transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease; z-index: 1; }
         .d-pad-up { width: 38px; height: 50px; left: 39px; top: 0; border-radius: 8px 8px 2px 2px; }
@@ -143,44 +147,66 @@
         .d-left { top: 30px; left: -10px; width: 60px; height: 60px; }
         .d-right { top: 30px; right: -10px; width: 60px; height: 60px; }
 
-        .action-buttons { position: absolute; top: calc(39% - 46px); left: min(calc(100% - 182px), calc(75% - 86px)); width: 172px; height: 116px; transform: none; transform-origin: center; pointer-events: none; }
-        .btn { width: 58px; height: 58px; background: radial-gradient(circle at 35% 28%, #c90768 0%, #ad0759 44%, #7e083e 100%); border-radius: 50%; position: absolute; box-shadow: inset 4px 5px 8px rgba(255,255,255,0.25), inset -5px -6px 10px rgba(0,0,0,0.45), 2px 5px 7px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease; }
+        .action-buttons { position: absolute; top: calc(39% - 46px); left: min(calc(100% - 182px), calc(75% - 86px)); width: 172px; height: 116px; transform: none; transform-origin: center; pointer-events: none; overflow: visible; }
+        .btn { width: 58px; height: 58px; background: radial-gradient(circle at 35% 28%, #c90768 0%, #ad0759 44%, #7e083e 100%); border-radius: 50%; position: absolute; box-shadow: inset 4px 5px 8px rgba(255,255,255,0.25), inset -5px -6px 10px rgba(0,0,0,0.45), 2px 5px 7px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease; transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); transform-origin: center; }
         .action-buttons .btn { pointer-events: auto; }
-        .btn:active, .btn.active { transform: scale(0.94); background: radial-gradient(circle at 42% 38%, #a70653 0%, #850541 100%); box-shadow: inset 7px 8px 13px rgba(0,0,0,0.62), inset -2px -2px 5px rgba(255,255,255,0.12), 1px 2px 4px rgba(0,0,0,0.22); }
+        .btn:active, .btn.active { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(var(--ctrl-scale) * 0.94)); background: radial-gradient(circle at 42% 38%, #a70653 0%, #850541 100%); box-shadow: inset 7px 8px 13px rgba(0,0,0,0.62), inset -2px -2px 5px rgba(255,255,255,0.12), 1px 2px 4px rgba(0,0,0,0.22); }
         .btn-b { left: 18px; top: 50px; }
         .btn-a { right: 16px; top: 6px; }
         .btn-label { position: absolute; color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 22px; line-height: 1; bottom: -27px; right: -2px; transform: rotate(-18deg); text-shadow: 0 1px 0 rgba(255,255,255,0.22); }
 
         .system-buttons { position: absolute; top: calc(77% - 20px); left: 42%; display: flex; gap: 20px; transform: translateX(-50%) rotate(-25deg); }
-        .sys-btn-wrapper { display: flex; flex-direction: column; align-items: center; }
+        .sys-btn-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); transform-origin: center; }
         .sys-btn { width: 55px; height: 15px; background-color: var(--select-start); border-radius: 20px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -2px -2px 5px rgba(0,0,0,0.5), 1px 2px 4px rgba(0,0,0,0.3); cursor: pointer; }
         .sys-btn:active, .sys-btn.active { transform: scale(0.95); box-shadow: inset 3px 3px 8px rgba(0,0,0,0.6); }
         .sys-label { color: var(--text-blue); font-family: 'Teko', sans-serif; font-weight: bold; font-size: 14px; margin-top: 5px; }
-        .game-settings-btn { position: absolute; left: 9%; top: calc(73% - 18px); width: 38px; height: 38px; border: none; border-radius: 50%; background: linear-gradient(145deg, #a8a8a8, #7d7d7d); color: #333; font-size: 18px; font-weight: bold; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.32), 1px 3px 5px rgba(0,0,0,0.32); cursor: pointer; pointer-events: auto; }
-        .game-settings-btn:active { transform: scale(0.94); box-shadow: inset 4px 4px 9px rgba(0,0,0,0.5); }
-        .speaker { position: absolute; bottom: 5%; right: 10%; display: flex; gap: 8px; transform: rotate(-25deg); }
+        .game-settings-btn { position: absolute; left: 9%; top: calc(73% - 18px); width: 38px; height: 38px; border: none; border-radius: 50%; background: linear-gradient(145deg, #a8a8a8, #7d7d7d); color: #333; font-size: 18px; font-weight: bold; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.4), inset -3px -3px 7px rgba(0,0,0,0.32), 1px 3px 5px rgba(0,0,0,0.32); cursor: pointer; pointer-events: auto; transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); transform-origin: center; }
+        .game-settings-btn:active { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(var(--ctrl-scale) * 0.94)); box-shadow: inset 4px 4px 9px rgba(0,0,0,0.5); }
+        .speaker { position: absolute; bottom: 5%; right: 10%; display: flex; gap: 8px; transform: translate(var(--ctrl-x), var(--ctrl-y)) rotate(-25deg) scale(var(--ctrl-scale)); transform-origin: center; }
         .grill { width: 8px; height: 60px; background-color: #b8b6bf; border-radius: 5px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3); }
 
-        .game-settings-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 120; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .game-settings-panel { width: 100%; max-width: 330px; background: #2a2a35; border-radius: 12px; padding: 20px; color: white; box-shadow: 0 12px 28px rgba(0,0,0,0.65); }
-        .game-settings-panel h3 { margin: 0 0 16px; font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--btn-color); line-height: 1.5; }
-        .game-settings-action { width: 100%; min-height: 46px; border: none; border-radius: 8px; background: #4CAF50; color: white; font-weight: bold; font-size: 14px; cursor: pointer; margin-bottom: 10px; }
-        .game-settings-action.load { background: #3f66d6; }
+        .game-settings-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.68); z-index: 120; display: none; justify-content: center; align-items: center; padding: 18px; }
+        .game-settings-panel { width: min(94vw, 390px); background: linear-gradient(145deg, #d8d6de, #a9a7b0); border-radius: 18px 18px 34px 18px; padding: 16px; color: #20202a; box-shadow: inset 3px 3px 6px rgba(255,255,255,0.52), inset -5px -5px 12px rgba(0,0,0,0.23), 0 18px 34px rgba(0,0,0,0.68); border-top: 4px solid #eceaf2; border-left: 4px solid #f6f4fb; }
+        .game-settings-head { display: grid; grid-template-columns: 48px 1fr; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .rotate-icon-btn { width: 44px; height: 44px; border: none; border-radius: 50%; background: radial-gradient(circle at 32% 26%, #f5f3fa, #aaa8b1 70%, #77747e); color: var(--text-blue); font-size: 24px; font-weight: bold; line-height: 1; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.62), inset -3px -4px 8px rgba(0,0,0,0.28), 1px 3px 5px rgba(0,0,0,0.28); cursor: pointer; }
+        .rotate-icon-btn:active { transform: scale(0.94); box-shadow: inset 4px 4px 9px rgba(0,0,0,0.38); }
+        .settings-title-block h3 { margin: 0; font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--text-blue); line-height: 1.5; text-shadow: 0 1px 0 rgba(255,255,255,0.35); }
+        .settings-mode-chip { display: inline-flex; margin-top: 6px; padding: 5px 9px; border-radius: 999px; background: #3c3b47; color: #dce4f4; font-family: 'Press Start 2P', monospace; font-size: 7px; letter-spacing: 0; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.46); }
+        .settings-screen-panel { background: linear-gradient(180deg, #595967, #373744); border-radius: 12px 12px 28px 12px; padding: 12px; box-shadow: inset 0 0 12px rgba(0,0,0,0.62); }
+        .settings-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 10px; }
+        .settings-tab { min-height: 32px; border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; background: #2d2d39; color: #cfd2dc; font-family: 'Press Start 2P', monospace; font-size: 7px; cursor: pointer; box-shadow: inset 1px 1px 3px rgba(255,255,255,0.08), inset -2px -2px 4px rgba(0,0,0,0.32); }
+        .settings-tab.active { background: #8bc34a; color: #10130f; border-color: #b8e785; }
+        .settings-page { display: none; min-height: 148px; }
+        .settings-page.active { display: block; }
+        .game-settings-action { width: 100%; min-height: 44px; border: none; border-radius: 8px; background: linear-gradient(145deg, #5db860, #347f39); color: white; font-weight: bold; font-size: 13px; cursor: pointer; margin-bottom: 9px; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.22), inset -3px -4px 8px rgba(0,0,0,0.32), 0 2px 4px rgba(0,0,0,0.24); }
+        .game-settings-action.load { background: linear-gradient(145deg, #5a77df, #304aa8); }
+        .game-settings-action.amber { background: linear-gradient(145deg, #e0b24f, #a26722); }
         .game-settings-action:disabled { opacity: 0.55; cursor: not-allowed; }
-        .game-settings-status { min-height: 18px; color: #b8b8c8; font-size: 11px; line-height: 1.4; margin: 4px 0 14px; }
-        .game-settings-close { width: 100%; min-height: 42px; border: none; border-radius: 8px; background: #555; color: white; font-weight: bold; cursor: pointer; }
-        .rotate-setting { margin: 0 0 14px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.18); }
-        .rotate-setting-title { margin-bottom: 8px; color: #b8b8c8; font-size: 10px; font-weight: bold; letter-spacing: 0; }
-        .rotate-toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-        .rotate-option { min-height: 38px; border: 1px solid #555; border-radius: 7px; background: #333845; color: #fff; font-size: 11px; font-weight: bold; cursor: pointer; transition: transform 0.12s ease, background 0.18s ease, border-color 0.18s ease; }
-        .rotate-option:active { transform: scale(0.96); }
-        .rotate-option.active { border-color: #8bc34a; background: #8bc34a; color: #11151b; box-shadow: 0 0 0 2px rgba(139,195,74,0.18); }
+        .settings-control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .mini-settings-btn { min-height: 38px; border: none; border-radius: 8px; background: #4a4a58; color: #fff; font-size: 11px; font-weight: bold; box-shadow: inset 2px 2px 4px rgba(255,255,255,0.12), inset -3px -3px 6px rgba(0,0,0,0.32); cursor: pointer; }
+        .mini-settings-btn[aria-pressed="true"] { background: #8bc34a; color: #10130f; }
+        .mini-settings-btn.danger { background: #8d3945; }
+        .game-settings-status { min-height: 22px; color: #d7d9e4; font-size: 11px; line-height: 1.45; margin: 3px 0 0; }
+        .display-readout { min-height: 46px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); color: #d7d9e4; font-family: 'Press Start 2P', monospace; font-size: 8px; }
+        .display-readout strong { color: #8bc34a; font-size: 10px; }
+        .game-settings-close { width: 100%; min-height: 40px; margin-top: 12px; border: none; border-radius: 8px; background: linear-gradient(145deg, #817f89, #53515d); color: white; font-weight: bold; cursor: pointer; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.18), inset -3px -4px 8px rgba(0,0,0,0.28); }
+        .controller-editor-bar { position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); width: min(94vw, 560px); transform: translate(-50%, 140%); z-index: 140; display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 8px; padding: 10px; border-radius: 14px; background: linear-gradient(145deg, #d8d6de, #a8a6af); box-shadow: inset 2px 2px 5px rgba(255,255,255,0.45), inset -4px -4px 10px rgba(0,0,0,0.25), 0 8px 22px rgba(0,0,0,0.52); transition: transform 0.25s ease; pointer-events: none; }
+        body.customizing-controller .controller-editor-bar { transform: translate(-50%, 0); pointer-events: auto; }
+        .editor-readout { min-height: 42px; border-radius: 8px; background: #31313c; color: #dce4f4; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Press Start 2P', monospace; font-size: 7px; gap: 5px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.42); }
+        .editor-readout strong { color: #8bc34a; font-size: 7px; }
+        .editor-actions { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+        .editor-btn { min-height: 42px; border: none; border-radius: 8px; background: #555461; color: #fff; font-weight: bold; font-size: 10px; cursor: pointer; box-shadow: inset 2px 2px 4px rgba(255,255,255,0.16), inset -3px -3px 6px rgba(0,0,0,0.34); }
+        .editor-btn.danger { background: #8d3945; }
+        .editor-btn.done { background: #347f39; }
+        body.customizing-controller [data-control] { cursor: move; }
+        body.customizing-controller [data-control]::after { content: attr(data-custom-label); position: absolute; left: 50%; top: -18px; transform: translateX(-50%); padding: 3px 5px; border-radius: 5px; background: #2a2082; color: #fff; font-family: 'Press Start 2P', monospace; font-size: 6px; line-height: 1; white-space: nowrap; z-index: 80; pointer-events: none; box-shadow: 0 2px 5px rgba(0,0,0,0.35); }
+        body.customizing-controller [data-control].selected-custom-control { outline: 2px solid #8bc34a; outline-offset: 5px; }
 
-        @media (max-height: 700px) { .screen-container { padding: 12px 14px 16px; } .screen { width: min(82%, 320px); } .d-pad { transform: scale(0.9); transform-origin: center; } .action-buttons { transform: scale(0.92); transform-origin: center; } .system-buttons { top: calc(78% - 20px); left: 42%; transform: translateX(-50%) scale(0.9) rotate(-25deg); } .game-settings-btn { transform: scale(0.9); transform-origin: center; } }
+        @media (max-height: 700px) { .screen-container { padding: 12px 14px 16px; } .screen { width: min(82%, 320px); } .d-pad { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(0.9 * var(--ctrl-scale))); transform-origin: center; } .action-buttons { transform: scale(0.92); transform-origin: center; } .system-buttons { top: calc(78% - 20px); left: 42%; transform: translateX(-50%) scale(0.9) rotate(-25deg); } .game-settings-btn { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(0.9 * var(--ctrl-scale))); transform-origin: center; } }
 
         body.layout-landscape { background: radial-gradient(circle at center, #22232b 0%, #111117 62%, #08080c 100%); }
         body.layout-landscape #console-wrapper { justify-content: center; }
-        body.layout-landscape .console { width: 100%; max-width: none; height: 100%; max-height: none; padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border-radius: 18px; display: grid; grid-template-columns: minmax(126px, 24%) minmax(280px, 1fr) minmax(146px, 24%); grid-template-rows: minmax(42px, 8%) minmax(0, 1fr) minmax(38px, 10%); column-gap: clamp(4px, 2%, 18px); overflow: hidden; container-type: size; }
+        body.layout-landscape .console { width: 100%; max-width: none; height: 100%; max-height: none; padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); border-radius: 18px; display: grid; grid-template-columns: minmax(178px, 23%) minmax(280px, 1fr) minmax(188px, 23%); grid-template-rows: minmax(42px, 8%) minmax(0, 1fr) minmax(42px, 11%); column-gap: clamp(8px, 2%, 22px); overflow: hidden; container-type: size; }
         body.layout-landscape .console::before,
         body.layout-landscape .console::after { content: ''; position: absolute; top: 50%; width: 54px; width: clamp(32px, 6cqw, 72px); height: 190px; height: clamp(120px, 42cqh, 260px); transform: translateY(-50%); border-radius: 999px; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.18) 5px 11px); opacity: 0.42; pointer-events: none; }
         body.layout-landscape .console::before { left: clamp(82px, 16cqw, 190px); }
@@ -188,10 +214,10 @@
         body.layout-landscape .power-section { grid-column: 1 / 4; grid-row: 1; width: auto; min-height: 0; padding: 0 clamp(8px, 2cqw, 18px); z-index: 7; align-self: center; }
         body.layout-landscape .power-text { font-size: clamp(8px, 2cqh, 10px); }
         body.layout-landscape .eject-btn { padding: 7px 11px; }
-        body.layout-landscape .screen-container { grid-column: 2; grid-row: 2; align-self: center; justify-self: center; width: min(100%, 720px); width: min(54cqw, calc((100cqh - 124px) * 1.45), 760px); max-width: 100%; margin: 0; padding: clamp(10px, 2.4cqh, 16px) clamp(12px, 2.2cqw, 22px) clamp(12px, 2.8cqh, 20px); border-radius: 16px 16px 34px 16px; z-index: 2; }
+        body.layout-landscape .screen-container { grid-column: 2; grid-row: 2; align-self: center; justify-self: center; width: min(100%, 62cqw, calc((100cqh - 108px) * 1.48), 820px); max-width: 100%; margin: 0; padding: clamp(10px, 2.4cqh, 16px) clamp(12px, 2.2cqw, 22px) clamp(12px, 2.8cqh, 20px); border-radius: 16px 16px 34px 16px; z-index: 2; }
         body.layout-landscape .screen-top-text { font-size: clamp(7px, 1.8cqh, 10px); margin-bottom: clamp(5px, 1.2cqh, 8px); }
-        body.layout-landscape .screen { width: min(92%, 700px); }
-        body.layout-landscape .battery { left: clamp(8px, 1.4cqw, 14px); }
+        body.layout-landscape .screen { width: min(94%, 760px); }
+        body.layout-landscape .battery { left: auto; right: clamp(10px, 2cqw, 18px); top: clamp(9px, 2cqh, 14px); }
         body.layout-landscape .top-grooves { position: absolute; inset: 0; width: 100%; min-height: 0; margin: 0; padding: 0; display: block; z-index: 5; pointer-events: none; }
         body.layout-landscape .l-r-btn { position: absolute; top: clamp(50px, 9cqh, 78px); width: clamp(62px, 11cqw, 88px); height: clamp(24px, 5.4cqh, 34px); font-size: clamp(14px, 3cqh, 18px); pointer-events: auto; }
         body.layout-landscape #btn-l { left: clamp(18px, 6cqw, 88px); }
@@ -200,20 +226,26 @@
         body.layout-landscape .logo-area span { font-size: 0.72em; }
         body.layout-landscape .logo-area .advance-mark { font-size: 0.9em; }
         body.layout-landscape .controls-container { grid-column: 1 / 4; grid-row: 2 / 4; width: 100%; height: 100%; min-height: 0; margin: 0; position: relative; pointer-events: none; z-index: 4; }
-        body.layout-landscape .d-pad { top: 50%; left: 7%; left: clamp(14px, 8cqw, 96px); transform: translateY(-50%) scale(0.92); transform-origin: center; pointer-events: auto; }
-        body.layout-landscape .action-buttons { top: 50%; left: auto; right: 7%; right: clamp(10px, 7cqw, 94px); transform: translateY(-50%) scale(0.92); transform-origin: center; }
-        body.layout-landscape .system-buttons { top: auto; left: 50%; bottom: 48px; bottom: clamp(36px, 9cqh, 72px); gap: clamp(16px, 3cqw, 32px); transform: translateX(-50%) rotate(0deg) scale(0.92); pointer-events: auto; }
-        body.layout-landscape .game-settings-btn { left: 6%; left: clamp(18px, 6cqw, 76px); top: auto; bottom: 54px; bottom: clamp(32px, 8cqh, 74px); transform: none; z-index: 6; pointer-events: auto; }
-        body.layout-landscape .speaker { right: 5%; right: clamp(18px, 5cqw, 74px); bottom: 48px; bottom: clamp(28px, 8cqh, 68px); transform: rotate(-90deg); gap: 6px; z-index: 4; }
+        body.layout-landscape .d-pad { top: 50%; left: clamp(22px, 7cqw, 84px); transform: translateY(-50%) translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(1.08 * var(--ctrl-scale))); transform-origin: center; pointer-events: auto; }
+        body.layout-landscape .action-buttons { top: 50%; left: auto; right: clamp(14px, 4cqw, 42px); transform: translateY(-50%) scale(1.02); transform-origin: center; }
+        body.layout-landscape .system-buttons { inset: 0; top: 0; left: 0; display: block; transform: none; pointer-events: none; }
+        body.layout-landscape .sys-btn-wrapper { position: absolute; top: auto; bottom: clamp(10px, 3cqh, 30px); pointer-events: auto; }
+        body.layout-landscape .system-select { left: clamp(196px, 29cqw, 350px); }
+        body.layout-landscape .system-start { right: clamp(196px, 29cqw, 350px); }
+        body.layout-landscape .game-settings-btn { left: clamp(18px, 5cqw, 62px); top: auto; bottom: clamp(28px, 8cqh, 66px); transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(var(--ctrl-scale)); z-index: 6; pointer-events: auto; }
+        body.layout-landscape .game-settings-btn:active { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(var(--ctrl-scale) * 0.94)); }
+        body.layout-landscape .speaker { right: clamp(18px, 4cqw, 54px); bottom: clamp(26px, 8cqh, 62px); transform: translate(var(--ctrl-x), var(--ctrl-y)) rotate(-90deg) scale(var(--ctrl-scale)); gap: 6px; z-index: 4; }
         body.layout-landscape .grill { height: clamp(40px, 12cqh, 64px); }
 
         @media (max-height: 430px) {
-            body.layout-landscape .d-pad { transform: translateY(-50%) scale(0.78); }
-            body.layout-landscape .action-buttons { transform: translateY(-50%) scale(0.78); }
-            body.layout-landscape .system-buttons { bottom: 30px; transform: translateX(-50%) rotate(0deg) scale(0.78); }
-            body.layout-landscape .game-settings-btn { transform: scale(0.84); }
-            body.layout-landscape .speaker { transform: rotate(-90deg) scale(0.85); }
+            body.layout-landscape .d-pad { transform: translateY(-50%) translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(1.02 * var(--ctrl-scale))); }
+            body.layout-landscape .action-buttons { transform: translateY(-50%) scale(0.98); }
+            body.layout-landscape .system-buttons .sys-btn-wrapper { bottom: 10px; }
+            body.layout-landscape .game-settings-btn { transform: translate(var(--ctrl-x), var(--ctrl-y)) scale(calc(0.88 * var(--ctrl-scale))); }
+            body.layout-landscape .speaker { transform: translate(var(--ctrl-x), var(--ctrl-y)) rotate(-90deg) scale(calc(0.88 * var(--ctrl-scale))); }
         }
+
+        body.customizing-controller.custom-grid-on .console::after { content: ''; position: absolute; inset: 0; top: 0; left: 0; width: auto; height: auto; transform: none; z-index: 3; pointer-events: none; border-radius: inherit; opacity: 0.28; background-size: 24px 24px; background-image: linear-gradient(rgba(42,32,130,0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(42,32,130,0.55) 1px, transparent 1px); }
 
         @media (orientation: portrait) {
             body.layout-landscape #console-wrapper.slide-up,
@@ -304,13 +336,13 @@
                 <div class="battery"><div class="battery-led"></div><span class="battery-text">BATTERY</span></div>
                 <div class="screen"><canvas id="gameCanvas" width="240" height="160"></canvas><div id="bootScreen"><p id="bootText" style="color:#aaa;">Menunggu Power...</p></div></div>
             </div>
-            <div class="top-grooves"><div class="l-r-btn" id="btn-l">L</div><div class="logo-area">Nintendo <span>GAME BOY</span> <span class="advance-mark">ADVANCE</span></div><div class="l-r-btn" id="btn-r">R</div></div>
+            <div class="top-grooves"><div class="l-r-btn" id="btn-l" data-control="l" data-custom-label="L">L</div><div class="logo-area">Nintendo <span>GAME BOY</span> <span class="advance-mark">ADVANCE</span></div><div class="l-r-btn" id="btn-r" data-control="r" data-custom-label="R">R</div></div>
             <div class="controls-container">
-                <div class="d-pad"><div class="d-pad-arm d-pad-up"></div><div class="d-pad-arm d-pad-down"></div><div class="d-pad-arm d-pad-left"></div><div class="d-pad-arm d-pad-right"></div><div class="d-pad-center"></div><div class="d-hitbox d-up" id="btn-up"></div><div class="d-hitbox d-down" id="btn-down"></div><div class="d-hitbox d-left" id="btn-left"></div><div class="d-hitbox d-right" id="btn-right"></div></div>
-                <div class="action-buttons"><div class="btn btn-b" id="btn-b"><span class="btn-label">B</span></div><div class="btn btn-a" id="btn-a"><span class="btn-label">A</span></div></div>
-                <div class="system-buttons"><div class="sys-btn-wrapper"><div class="sys-btn" id="btn-select"></div><span class="sys-label">SELECT</span></div><div class="sys-btn-wrapper"><div class="sys-btn" id="btn-start"></div><span class="sys-label">START</span></div></div>
-                <button class="game-settings-btn" id="btnGameSettings" aria-label="Game settings" title="Game settings">⚙</button>
-                <div class="speaker"><div class="grill"></div><div class="grill"></div><div class="grill"></div><div class="grill"></div><div class="grill"></div><div class="grill"></div></div>
+                <div class="d-pad" data-control="dpad" data-custom-label="D-PAD"><div class="d-pad-arm d-pad-up"></div><div class="d-pad-arm d-pad-down"></div><div class="d-pad-arm d-pad-left"></div><div class="d-pad-arm d-pad-right"></div><div class="d-pad-center"></div><div class="d-hitbox d-up" id="btn-up"></div><div class="d-hitbox d-down" id="btn-down"></div><div class="d-hitbox d-left" id="btn-left"></div><div class="d-hitbox d-right" id="btn-right"></div></div>
+                <div class="action-buttons"><div class="btn btn-b" id="btn-b" data-control="b" data-custom-label="B"><span class="btn-label">B</span></div><div class="btn btn-a" id="btn-a" data-control="a" data-custom-label="A"><span class="btn-label">A</span></div></div>
+                <div class="system-buttons"><div class="sys-btn-wrapper system-select" data-control="select" data-custom-label="SELECT"><div class="sys-btn" id="btn-select"></div><span class="sys-label">SELECT</span></div><div class="sys-btn-wrapper system-start" data-control="start" data-custom-label="START"><div class="sys-btn" id="btn-start"></div><span class="sys-label">START</span></div></div>
+                <button class="game-settings-btn" id="btnGameSettings" aria-label="Game settings" title="Game settings" data-control="settings" data-custom-label="SET">⚙</button>
+                <div class="speaker" data-control="speaker" data-custom-label="SPKR"><div class="grill"></div><div class="grill"></div><div class="grill"></div><div class="grill"></div><div class="grill"></div><div class="grill"></div></div>
             </div>
         </div>
     </div>
@@ -318,18 +350,49 @@
     <!-- GAME SETTINGS MODAL -->
     <div class="game-settings-modal" id="gameSettingsModal">
         <div class="game-settings-panel">
-            <h3>GAME SETTINGS</h3>
-            <div class="rotate-setting">
-                <div class="rotate-setting-title">ROTASI LAYOUT</div>
-                <div class="rotate-toggle" role="group" aria-label="Rotasi layout">
-                    <button class="rotate-option" id="btnLayoutPortrait" type="button" aria-pressed="true">PORTRAIT</button>
-                    <button class="rotate-option" id="btnLayoutLandscape" type="button" aria-pressed="false">LANDSCAPE</button>
+            <div class="game-settings-head">
+                <button class="rotate-icon-btn" id="btnRotateLayout" type="button" aria-label="Rotate layout" aria-pressed="false" title="Rotate layout">↻</button>
+                <div class="settings-title-block">
+                    <h3>PENGATURAN KHUSUS</h3>
+                    <div class="settings-mode-chip" id="layoutModeLabel">PORTRAIT</div>
                 </div>
             </div>
-            <button class="game-settings-action" id="btnSaveState" disabled>Save State</button>
-            <button class="game-settings-action load" id="btnLoadState" disabled>Load State</button>
-            <div class="game-settings-status" id="gameSettingsStatus">Power ON game terlebih dahulu untuk menyimpan state.</div>
+            <div class="settings-screen-panel">
+                <div class="settings-tabs" role="tablist" aria-label="Game settings sections">
+                    <button class="settings-tab active" type="button" data-settings-tab="save" role="tab" aria-selected="true">SAVE</button>
+                    <button class="settings-tab" type="button" data-settings-tab="controls" role="tab" aria-selected="false">CTRL</button>
+                    <button class="settings-tab" type="button" data-settings-tab="display" role="tab" aria-selected="false">VIEW</button>
+                </div>
+                <div class="settings-page active" id="settingsPageSave" data-settings-page="save">
+                    <button class="game-settings-action" id="btnSaveState" disabled>Save State</button>
+                    <button class="game-settings-action load" id="btnLoadState" disabled>Load State</button>
+                    <div class="game-settings-status" id="gameSettingsStatus">Power ON game terlebih dahulu untuk menyimpan state.</div>
+                </div>
+                <div class="settings-page" id="settingsPageControls" data-settings-page="controls">
+                    <button class="game-settings-action amber" id="btnToggleCustomizer" type="button">Customize Controller</button>
+                    <div class="settings-control-row">
+                        <button class="mini-settings-btn" id="btnSettingsGrid" type="button" aria-pressed="true">Grid ON</button>
+                        <button class="mini-settings-btn danger" id="btnResetControls" type="button">Reset Layout</button>
+                    </div>
+                    <div class="game-settings-status" id="controllerSettingsStatus">CUSTOM: OFF</div>
+                </div>
+                <div class="settings-page" id="settingsPageDisplay" data-settings-page="display">
+                    <div class="display-readout"><span>RATIO</span><strong>3:2</strong></div>
+                    <div class="display-readout"><span>LAYOUT</span><strong id="displayLayoutReadout">PORTRAIT</strong></div>
+                </div>
+            </div>
             <button class="game-settings-close" id="btnCloseGameSettings">Tutup</button>
+        </div>
+    </div>
+
+    <div class="controller-editor-bar" id="controllerEditorBar" aria-hidden="true">
+        <div class="editor-readout"><span id="editorSelectedName">D-PAD</span><strong id="editorGridState">GRID</strong></div>
+        <div class="editor-actions">
+            <button class="editor-btn" id="btnEditorSmaller" type="button">-</button>
+            <button class="editor-btn" id="btnEditorBigger" type="button">+</button>
+            <button class="editor-btn" id="btnEditorGrid" type="button">GRID</button>
+            <button class="editor-btn danger" id="btnEditorReset" type="button">RESET</button>
+            <button class="editor-btn done" id="btnEditorDone" type="button">DONE</button>
         </div>
     </div>
 
@@ -761,25 +824,39 @@
         const gameSettingsStatus = document.getElementById('gameSettingsStatus');
         const btnSaveState = document.getElementById('btnSaveState');
         const btnLoadState = document.getElementById('btnLoadState');
-        const btnLayoutPortrait = document.getElementById('btnLayoutPortrait');
-        const btnLayoutLandscape = document.getElementById('btnLayoutLandscape');
+        const btnRotateLayout = document.getElementById('btnRotateLayout');
+        const layoutModeLabel = document.getElementById('layoutModeLabel');
+        const displayLayoutReadout = document.getElementById('displayLayoutReadout');
+        const btnToggleCustomizer = document.getElementById('btnToggleCustomizer');
+        const btnSettingsGrid = document.getElementById('btnSettingsGrid');
+        const btnResetControls = document.getElementById('btnResetControls');
+        const controllerSettingsStatus = document.getElementById('controllerSettingsStatus');
+        const controllerEditorBar = document.getElementById('controllerEditorBar');
+        const editorSelectedName = document.getElementById('editorSelectedName');
+        const editorGridState = document.getElementById('editorGridState');
+        const btnEditorSmaller = document.getElementById('btnEditorSmaller');
+        const btnEditorBigger = document.getElementById('btnEditorBigger');
+        const btnEditorGrid = document.getElementById('btnEditorGrid');
+        const btnEditorReset = document.getElementById('btnEditorReset');
+        const btnEditorDone = document.getElementById('btnEditorDone');
         let gameSettingsRefreshId = 0;
         const LAYOUT_MODE_KEY = 'gbaLayoutMode';
         let layoutMode = localStorage.getItem(LAYOUT_MODE_KEY) === 'landscape' ? 'landscape' : 'portrait';
 
-        function syncLayoutButtons() {
+        function syncLayoutControl() {
             const isLandscape = layoutMode === 'landscape';
-            btnLayoutPortrait.classList.toggle('active', !isLandscape);
-            btnLayoutLandscape.classList.toggle('active', isLandscape);
-            btnLayoutPortrait.setAttribute('aria-pressed', String(!isLandscape));
-            btnLayoutLandscape.setAttribute('aria-pressed', String(isLandscape));
+            btnRotateLayout.setAttribute('aria-pressed', String(isLandscape));
+            btnRotateLayout.title = isLandscape ? 'Switch to portrait' : 'Switch to landscape';
+            btnRotateLayout.setAttribute('aria-label', btnRotateLayout.title);
+            layoutModeLabel.innerText = isLandscape ? 'LANDSCAPE' : 'PORTRAIT';
+            displayLayoutReadout.innerText = isLandscape ? 'LANDSCAPE' : 'PORTRAIT';
         }
 
         function applyLayoutMode(mode, shouldStore = true) {
             layoutMode = mode === 'landscape' ? 'landscape' : 'portrait';
             document.body.classList.toggle('layout-landscape', layoutMode === 'landscape');
             if (shouldStore) localStorage.setItem(LAYOUT_MODE_KEY, layoutMode);
-            syncLayoutButtons();
+            syncLayoutControl();
         }
 
         async function requestOrientationForLayout(mode) {
@@ -793,7 +870,7 @@
                         else if (target.webkitRequestFullscreen) await target.webkitRequestFullscreen();
                     }
                 } catch (err) {
-                    console.warn('Fullscreen for landscape layout failed:', err);
+                    console.info('Fullscreen for landscape layout skipped:', err);
                 }
 
                 try {
@@ -802,13 +879,13 @@
                         didLock = true;
                     }
                 } catch (err) {
-                    console.warn('Orientation lock failed:', err);
+                    console.info('Orientation lock skipped:', err);
                 }
             } else {
                 try {
                     if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
                 } catch (err) {
-                    console.warn('Orientation unlock failed:', err);
+                    console.info('Orientation unlock skipped:', err);
                 }
             }
 
@@ -817,6 +894,7 @@
 
         async function chooseLayoutMode(mode) {
             applyLayoutMode(mode);
+            applyControllerLayout();
             const didLock = await requestOrientationForLayout(mode);
             if (mode === 'landscape') {
                 showToast(didLock ? 'Landscape aktif.' : 'Layout landscape aktif.');
@@ -825,9 +903,232 @@
             }
         }
 
-        btnLayoutPortrait.addEventListener('click', () => chooseLayoutMode('portrait'));
-        btnLayoutLandscape.addEventListener('click', () => chooseLayoutMode('landscape'));
+        btnRotateLayout.addEventListener('click', () => {
+            chooseLayoutMode(layoutMode === 'landscape' ? 'portrait' : 'landscape');
+        });
+
+        document.querySelectorAll('.settings-tab').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => setSettingsTab(tabBtn.dataset.settingsTab));
+        });
+
+        function setSettingsTab(tabName) {
+            document.querySelectorAll('.settings-tab').forEach(tabBtn => {
+                const isActive = tabBtn.dataset.settingsTab === tabName;
+                tabBtn.classList.toggle('active', isActive);
+                tabBtn.setAttribute('aria-selected', String(isActive));
+            });
+            document.querySelectorAll('.settings-page').forEach(page => {
+                page.classList.toggle('active', page.dataset.settingsPage === tabName);
+            });
+        }
+
+        const CONTROLLER_LAYOUT_KEY = 'gbaControllerLayoutsV1';
+        const CONTROLLER_GRID_KEY = 'gbaControllerGridMode';
+        const CONTROL_SELECTORS = {
+            dpad: '[data-control="dpad"]',
+            a: '[data-control="a"]',
+            b: '[data-control="b"]',
+            select: '[data-control="select"]',
+            start: '[data-control="start"]',
+            l: '[data-control="l"]',
+            r: '[data-control="r"]',
+            settings: '[data-control="settings"]',
+            speaker: '[data-control="speaker"]'
+        };
+        const CONTROL_LABELS = {
+            dpad: 'D-PAD',
+            a: 'A',
+            b: 'B',
+            select: 'SELECT',
+            start: 'START',
+            l: 'L',
+            r: 'R',
+            settings: 'SET',
+            speaker: 'SPKR'
+        };
+        const CONTROLLER_GRID_SIZE = 12;
+        let controllerLayouts = loadControllerLayouts();
+        let controllerEditMode = false;
+        let controllerGridMode = localStorage.getItem(CONTROLLER_GRID_KEY) !== 'off';
+        let selectedControlName = 'dpad';
+        let controllerDrag = null;
+
+        function loadControllerLayouts() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(CONTROLLER_LAYOUT_KEY) || '{}');
+                return (parsed && typeof parsed === 'object') ? parsed : {};
+            } catch (err) {
+                return {};
+            }
+        }
+
+        function persistControllerLayouts() {
+            localStorage.setItem(CONTROLLER_LAYOUT_KEY, JSON.stringify(controllerLayouts));
+        }
+
+        function getControllerProfile() {
+            if (!controllerLayouts[layoutMode]) controllerLayouts[layoutMode] = {};
+            return controllerLayouts[layoutMode];
+        }
+
+        function getControlState(name) {
+            const profile = getControllerProfile();
+            if (!profile[name]) profile[name] = { x: 0, y: 0, scale: 1 };
+            return profile[name];
+        }
+
+        function getControlElement(name) {
+            return document.querySelector(CONTROL_SELECTORS[name]);
+        }
+
+        function clamp(num, min, max) {
+            return Math.max(min, Math.min(max, num));
+        }
+
+        function snapToGrid(value) {
+            return controllerGridMode ? Math.round(value / CONTROLLER_GRID_SIZE) * CONTROLLER_GRID_SIZE : value;
+        }
+
+        function clampControlState(state) {
+            const consoleRect = document.getElementById('gameboyConsole').getBoundingClientRect();
+            const maxX = Math.max(40, consoleRect.width * 0.44);
+            const maxY = Math.max(40, consoleRect.height * 0.44);
+            state.x = clamp(state.x, -maxX, maxX);
+            state.y = clamp(state.y, -maxY, maxY);
+            state.scale = clamp(state.scale, 0.65, 1.65);
+        }
+
+        function applyControllerLayout() {
+            Object.keys(CONTROL_SELECTORS).forEach(name => {
+                const el = getControlElement(name);
+                if (!el) return;
+                const state = getControlState(name);
+                clampControlState(state);
+                el.style.setProperty('--ctrl-x', `${state.x}px`);
+                el.style.setProperty('--ctrl-y', `${state.y}px`);
+                el.style.setProperty('--ctrl-scale', state.scale);
+                el.classList.toggle('selected-custom-control', controllerEditMode && name === selectedControlName);
+            });
+            refreshControllerEditorUi();
+        }
+
+        function refreshControllerEditorUi() {
+            document.body.classList.toggle('customizing-controller', controllerEditMode);
+            document.body.classList.toggle('custom-grid-on', controllerEditMode && controllerGridMode);
+            controllerEditorBar.setAttribute('aria-hidden', String(!controllerEditMode));
+            editorSelectedName.innerText = CONTROL_LABELS[selectedControlName] || 'CTRL';
+            editorGridState.innerText = controllerGridMode ? 'GRID' : 'FREE';
+            btnSettingsGrid.innerText = controllerGridMode ? 'Grid ON' : 'Grid OFF';
+            btnSettingsGrid.setAttribute('aria-pressed', String(controllerGridMode));
+            btnEditorGrid.innerText = controllerGridMode ? 'GRID' : 'FREE';
+            btnToggleCustomizer.innerText = controllerEditMode ? 'Close Customizer' : 'Customize Controller';
+            controllerSettingsStatus.innerText = controllerEditMode ? `${CONTROL_LABELS[selectedControlName]} selected` : 'CUSTOM: OFF';
+        }
+
+        function setControllerEditMode(enabled) {
+            controllerEditMode = enabled;
+            clearDpadDirections();
+            if (enabled) {
+                selectedControlName = selectedControlName || 'dpad';
+                gameSettingsModal.style.display = 'none';
+            } else {
+                gameSettingsModal.style.display = 'flex';
+                setSettingsTab('controls');
+            }
+            applyControllerLayout();
+        }
+
+        function saveControlState(name, nextState) {
+            const state = getControlState(name);
+            state.x = nextState.x;
+            state.y = nextState.y;
+            state.scale = nextState.scale;
+            clampControlState(state);
+            persistControllerLayouts();
+            applyControllerLayout();
+        }
+
+        function beginControlDrag(e, name) {
+            if (!controllerEditMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            selectedControlName = name;
+            const state = getControlState(name);
+            controllerDrag = {
+                name,
+                pointerId: e.pointerId,
+                startClientX: e.clientX,
+                startClientY: e.clientY,
+                startX: state.x,
+                startY: state.y,
+                scale: state.scale
+            };
+            const el = getControlElement(name);
+            if (el && el.setPointerCapture) {
+                try { el.setPointerCapture(e.pointerId); } catch (err) {}
+            }
+            applyControllerLayout();
+        }
+
+        function moveControllerDrag(e) {
+            if (!controllerDrag || e.pointerId !== controllerDrag.pointerId) return;
+            e.preventDefault();
+            const nextState = {
+                x: snapToGrid(controllerDrag.startX + e.clientX - controllerDrag.startClientX),
+                y: snapToGrid(controllerDrag.startY + e.clientY - controllerDrag.startClientY),
+                scale: controllerDrag.scale
+            };
+            saveControlState(controllerDrag.name, nextState);
+        }
+
+        function endControllerDrag(e) {
+            if (!controllerDrag || (e.pointerId !== undefined && e.pointerId !== controllerDrag.pointerId)) return;
+            controllerDrag = null;
+            persistControllerLayouts();
+        }
+
+        function resizeSelectedControl(delta) {
+            const state = getControlState(selectedControlName);
+            saveControlState(selectedControlName, {
+                x: state.x,
+                y: state.y,
+                scale: Math.round(clamp(state.scale + delta, 0.65, 1.65) * 100) / 100
+            });
+        }
+
+        function toggleControllerGrid() {
+            controllerGridMode = !controllerGridMode;
+            localStorage.setItem(CONTROLLER_GRID_KEY, controllerGridMode ? 'on' : 'off');
+            refreshControllerEditorUi();
+        }
+
+        function resetCurrentControllerLayout() {
+            controllerLayouts[layoutMode] = {};
+            persistControllerLayouts();
+            selectedControlName = 'dpad';
+            applyControllerLayout();
+            showToast('Layout controller direset.');
+        }
+
+        Object.keys(CONTROL_SELECTORS).forEach(name => {
+            const el = getControlElement(name);
+            if (!el) return;
+            el.addEventListener('pointerdown', (e) => beginControlDrag(e, name), true);
+        });
+        window.addEventListener('pointermove', moveControllerDrag, { passive: false });
+        window.addEventListener('pointerup', endControllerDrag);
+        window.addEventListener('pointercancel', endControllerDrag);
+        btnToggleCustomizer.addEventListener('click', () => setControllerEditMode(!controllerEditMode));
+        btnSettingsGrid.addEventListener('click', toggleControllerGrid);
+        btnResetControls.addEventListener('click', resetCurrentControllerLayout);
+        btnEditorSmaller.addEventListener('click', () => resizeSelectedControl(-0.08));
+        btnEditorBigger.addEventListener('click', () => resizeSelectedControl(0.08));
+        btnEditorGrid.addEventListener('click', toggleControllerGrid);
+        btnEditorReset.addEventListener('click', resetCurrentControllerLayout);
+        btnEditorDone.addEventListener('click', () => setControllerEditMode(false));
         applyLayoutMode(layoutMode, false);
+        applyControllerLayout();
 
         function hasLogoAsset(rom) {
             return Boolean(rom.coverUrl && (rom.assetType === 'logo' || /\/logo\//i.test(rom.coverUrl)));
@@ -1071,6 +1372,7 @@
         }
 
         document.getElementById('btnGameSettings').onclick = () => {
+            refreshControllerEditorUi();
             updateGameSettingsStatus();
             gameSettingsModal.style.display = 'flex';
         };
@@ -1277,8 +1579,18 @@
         function bindButton(id) {
             const el = document.getElementById(id);
             if (!el) return;
-            const press   = (e) => { e.preventDefault(); el.classList.add('active');    if (isPowerOn) simulateKey(keyMap[id], 'keydown'); };
-            const release = (e) => { e.preventDefault(); el.classList.remove('active'); if (isPowerOn) simulateKey(keyMap[id], 'keyup');   };
+            const press   = (e) => {
+                e.preventDefault();
+                if (controllerEditMode) return;
+                el.classList.add('active');
+                if (isPowerOn) simulateKey(keyMap[id], 'keydown');
+            };
+            const release = (e) => {
+                e.preventDefault();
+                el.classList.remove('active');
+                if (controllerEditMode) return;
+                if (isPowerOn) simulateKey(keyMap[id], 'keyup');
+            };
             el.addEventListener('touchstart', press,   { passive: false });
             el.addEventListener('touchend',   release, { passive: false });
             el.addEventListener('mousedown',  press);
@@ -1338,11 +1650,13 @@
             const dpad = document.querySelector('.d-pad');
             dpad.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
+                if (controllerEditMode) return;
                 activeDpadPointer = e.pointerId;
                 if (dpad.setPointerCapture) dpad.setPointerCapture(e.pointerId);
                 setDpadDirections(getDirectionsFromPoint(e));
             });
             dpad.addEventListener('pointermove', (e) => {
+                if (controllerEditMode) return;
                 if (activeDpadPointer !== e.pointerId) return;
                 e.preventDefault();
                 setDpadDirections(getDirectionsFromPoint(e));
